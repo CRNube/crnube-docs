@@ -9,11 +9,12 @@ namespace CRNube\Docs\Frontend;
  */
 final class TemplateLoader
 {
-    public static function locate(string $name): string
+    /** @param string $dir Folder with the plugin's own copy (an add-on passes its own). */
+    public static function locate(string $name, string $dir = ''): string
     {
         $name  = ltrim(str_replace(['..', '\\'], ['', '/'], $name), '/');
         $theme = locate_template('crnube-docs/' . $name);
-        $path  = $theme !== '' ? $theme : CRND_DIR . 'templates/' . $name;
+        $path  = $theme !== '' ? $theme : ($dir !== '' ? trailingslashit($dir) : CRND_DIR . 'templates/') . $name;
 
         return (string) apply_filters('crnd_template_path', $path, $name);
     }
@@ -21,9 +22,9 @@ final class TemplateLoader
     /**
      * @param array<string, mixed> $vars Variables the template can use.
      */
-    public static function include(string $name, array $vars = []): void
+    public static function include(string $name, array $vars = [], string $dir = ''): void
     {
-        $path = self::locate($name);
+        $path = self::locate($name, $dir);
         if (!is_readable($path)) {
             return;
         }

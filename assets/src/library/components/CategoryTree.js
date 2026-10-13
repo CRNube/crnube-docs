@@ -41,7 +41,8 @@ export default function CategoryTree( {
 	onMove,
 	onDelete,
 	onCopyShortcode,
-	onAccess,
+	extraActions = [],
+	onExtraAction,
 	onDropDocuments,
 	onDropFiles,
 	onMoveCategory,
@@ -293,20 +294,18 @@ export default function CategoryTree( {
 											'crnube-docs'
 										) }
 									</MenuItem>
-									{ onAccess && (
+									{ extraActions.map( ( action ) => (
 										<MenuItem
-											icon="lock"
+											key={ action.id }
+											icon={ action.icon }
 											onClick={ () => {
-												onAccess( node );
+												onExtraAction( action, node );
 												onClose();
 											} }
 										>
-											{ __(
-												'Who can open it…',
-												'crnube-docs'
-											) }
+											{ action.label }
 										</MenuItem>
-									) }
+									) ) }
 								</MenuGroup>
 								{ canManage && (
 									<>

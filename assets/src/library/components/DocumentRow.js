@@ -3,7 +3,7 @@ import { DropdownMenu, MenuGroup, MenuItem } from '@wordpress/components';
 import FileIcon from './FileIcon';
 import InlineEdit from './InlineEdit';
 import CategoryPicker from './CategoryPicker';
-import AccessPicker from './AccessPicker';
+
 import Checkbox from './Checkbox';
 import { config, formatSize, statusLabel } from '../utils';
 
@@ -18,6 +18,7 @@ export default function DocumentRow( {
 	checked,
 	onToggle,
 	tree,
+	extraColumns = [],
 	byId,
 	reorderable,
 	dropIndicator,
@@ -96,9 +97,11 @@ export default function DocumentRow( {
 					}
 				/>
 			</td>
-			<td className="crnd-col-access">
-				<AccessPicker doc={ doc } onSave={ onSave } />
-			</td>
+			{ extraColumns.map( ( column ) => (
+				<td key={ column.id } className={ column.className }>
+					{ column.render( { doc, onSave } ) }
+				</td>
+			) ) }
 			<td className="crnd-col-year">
 				<InlineEdit
 					type="number"

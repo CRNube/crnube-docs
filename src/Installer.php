@@ -3,10 +3,7 @@ declare(strict_types=1);
 
 namespace CRNube\Docs;
 
-use CRNube\Docs\Access\GroupsTable;
-use CRNube\Docs\Access\PrivateStorage;
-use CRNube\Docs\Analytics\EventsTable;
-use CRNube\Docs\Analytics\Retention;
+
 use CRNube\Docs\Domain\CategoryTaxonomy;
 use CRNube\Docs\Domain\DocumentPostType;
 use CRNube\Docs\Domain\YearTaxonomy;
@@ -19,9 +16,6 @@ final class Installer
     public static function activate(): void
     {
         Capabilities::install();
-        EventsTable::install();
-        GroupsTable::install();
-        PrivateStorage::prepareFolder();
         update_option(self::VERSION_OPTION, CRND_VERSION, false);
 
         // The rewrite rules need the post type, taxonomies and endpoint registered first.
@@ -34,14 +28,13 @@ final class Installer
 
     public static function deactivate(): void
     {
-        Retention::unschedule();
         flush_rewrite_rules();
     }
 
     /**
      * The activation hook does not run when the plugin is updated in place, so the
-     * capabilities, the events table and the rewrite rules are refreshed whenever the
-     * stored version changes.
+     * capabilities and the rewrite rules are refreshed whenever the stored version
+     * changes.
      */
     public static function maybeUpgrade(): void
     {
@@ -49,9 +42,6 @@ final class Installer
             return;
         }
         Capabilities::install();
-        EventsTable::install();
-        GroupsTable::install();
-        PrivateStorage::prepareFolder();
         update_option(self::VERSION_OPTION, CRND_VERSION, false);
         add_action('init', static fn () => flush_rewrite_rules(), 99);
     }

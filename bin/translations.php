@@ -1,33 +1,36 @@
 <?php
 /**
- * Builds the Spanish translations from one source, languages/crnube-docs-es_CR.l10n.php:
+ * Builds the Spanish translations from one source, languages/{domain}-es_CR.l10n.php:
  *
  * - copies it to the other Spanish locales (es_ES, es_MX, ...);
  * - writes the JSON files WordPress loads for each built script (wp_set_script_translations),
- *   with only the strings that script uses;
+ *   with only the strings that script uses, and deletes JSON files of scripts that no
+ *   longer exist;
  * - reports strings used in the PHP or JS code that are missing from the source.
  *
- * Usage: php bin/translations.php   (exit code 1 if a string is missing)
+ * Usage: php bin/translations.php [--prune]   (exit code 1 if a string is missing)
+ * --prune removes from the source the entries no code uses any more.
+ *
+ * The same file runs in CRNube Docs Pro; only $domain and $scripts change.
  */
 
 $root    = dirname(__DIR__);
-$source  = $root . '/languages/crnube-docs-es_CR.l10n.php';
+$domain  = 'crnube-docs';
 $locales = ['es_CR', 'es_ES', 'es_MX', 'es_CO', 'es_AR', 'es_CL', 'es_PE', 'es_VE', 'es_GT', 'es_UY', 'es_EC', 'es_PR', 'es_DO'];
 
 /** Built script (relative path, as WordPress hashes it) => folder with its sources. */
 $scripts = [
     'build/library.js' => 'assets/src/library',
-    'build/reports.js' => 'assets/src/reports',
-    'build/access.js'  => 'assets/src/access',
     'build/block.js'   => 'assets/src/block',
     'assets/js/admin-migrate.js' => 'assets/js',
 ];
 
+$source   = $root . "/languages/{$domain}-es_CR.l10n.php";
 $data     = require $source;
 $messages = $data['messages'];
 
 /** @return array<string, true> */
-function crnd_php_strings(string $root): array
+function crnd_php_strings(string $root, string $domain): array
 {
     $funcs = ['__', '_e', 'esc_html__', 'esc_html_e', 'esc_attr__', 'esc_attr_e', '_n', '_x'];
     $found = [];
@@ -43,7 +46,7 @@ function crnd_php_strings(string $root): array
                 continue;
             }
             $args = [];
-            for ($j = $i + 1, $n = count($tokens); $j < $n && count($args) < 2; $j++) {
+            for ($j = $i + 1, $n = count($tokens); $j < $n && count($args) < 4; $j++) {
                 $t = $tokens[$j];
                 if (is_array($t) && $t[0] === T_CONSTANT_ENCAPSED_STRING) {
                     $args[] = eval('return ' . $t[1] . ';');
@@ -51,16 +54,18 @@ function crnd_php_strings(string $root): array
                     break;
                 }
             }
-            if ($args !== []) {
-                $found[$token[1] === '_n' && count($args) === 2 ? $args[0] . "\0" . $args[1] : $args[0]] = true;
+            // Only calls of this text domain (the last string argument).
+            if ($args === [] || end($args) !== $domain || count($args) < 2) {
+                continue;
             }
+            $found[$token[1] === '_n' && count($args) >= 3 ? $args[0] . "\0" . $args[1] : $args[0]] = true;
         }
     }
     return $found;
 }
 
 /** @return array<string, true> Strings of __( '…' ) and _n( '…', '…' ) calls in a JS folder. */
-function crnd_js_strings(string $dir): array
+function crnd_js_strings(string $dir, string $domain): array
 {
     $string = "'((?:\\\\.|[^'\\\\])*)'";
     $found  = [];
@@ -72,12 +77,13 @@ function crnd_js_strings(string $dir): array
         $code = (string) file_get_contents($file->getPathname());
         $code = (string) preg_replace('#/\*.*?\*/#s', '', $code); // translator comments sit inside calls
         $unescape = static fn (string $s): string => stripcslashes($s);
+        $dom      = preg_quote("'" . $domain . "'", '/');
 
-        preg_match_all('/\b_n\(\s*' . $string . '\s*,\s*' . $string . '/s', $code, $plurals, PREG_SET_ORDER);
+        preg_match_all('/\b_n\(\s*' . $string . '\s*,\s*' . $string . '\s*,[^,]+,\s*' . $dom . '/s', $code, $plurals, PREG_SET_ORDER);
         foreach ($plurals as $m) {
             $found[$unescape($m[1]) . "\0" . $unescape($m[2])] = true;
         }
-        preg_match_all('/\b__\(\s*' . $string . '\s*,\s*\'crnube-docs\'/s', $code, $singles, PREG_SET_ORDER);
+        preg_match_all('/\b__\(\s*' . $string . '\s*,\s*' . $dom . '/s', $code, $singles, PREG_SET_ORDER);
         foreach ($singles as $m) {
             $found[$unescape($m[1])] = true;
         }
@@ -85,10 +91,10 @@ function crnd_js_strings(string $dir): array
     return $found;
 }
 
-$found   = crnd_php_strings($root);
+$found    = crnd_php_strings($root, $domain);
 $byScript = [];
 foreach ($scripts as $script => $dir) {
-    $byScript[$script] = crnd_js_strings($root . '/' . $dir);
+    $byScript[$script] = crnd_js_strings($root . '/' . $dir, $domain);
     $found += $byScript[$script];
 }
 
@@ -97,13 +103,35 @@ foreach ($missing as $string) {
     fwrite(STDERR, 'Missing translation: ' . str_replace("\0", ' | ', $string) . PHP_EOL);
 }
 
+$unused = array_diff(array_keys($messages), array_keys($found));
+if ($unused !== [] && in_array('--prune', $argv, true)) {
+    // One entry per line in the source, so unused ones are removed line by line.
+    $lines = file($source);
+    $kept  = [];
+    foreach ($lines as $line) {
+        if (preg_match('/^\s+(\'(?:\\\\.|[^\'\\\\])*\'|"(?:\\\\.|[^"\\\\])*")\s*=>/', $line, $m)) {
+            $key = eval('return ' . $m[1] . ';');
+            if (in_array($key, $unused, true)) {
+                continue;
+            }
+        }
+        $kept[] = $line;
+    }
+    file_put_contents($source, implode('', $kept));
+    $data     = require $source;
+    $messages = $data['messages'];
+    echo count($unused) . " unused entries removed from the source.\n";
+    $unused = [];
+}
+
+$current = [];
 foreach ($locales as $locale) {
     if ($locale !== 'es_CR') {
         $copy             = $data;
         $copy['language'] = $locale;
         file_put_contents(
-            $root . "/languages/crnube-docs-{$locale}.l10n.php",
-            "<?php\n// Generated from crnube-docs-es_CR.l10n.php by bin/translations.php. Do not edit.\nreturn " . var_export($copy, true) . ";\n"
+            $root . "/languages/{$domain}-{$locale}.l10n.php",
+            "<?php\n// Generated from {$domain}-es_CR.l10n.php by bin/translations.php. Do not edit.\nreturn " . var_export($copy, true) . ";\n"
         );
     }
 
@@ -116,11 +144,13 @@ foreach ($locales as $locale) {
             $singular       = explode("\0", $key)[0];
             $jed[$singular] = explode("\0", $messages[$key]);
         }
+        $file           = "{$domain}-{$locale}-" . md5($script) . '.json';
+        $current[$file] = true;
         file_put_contents(
-            $root . "/languages/crnube-docs-{$locale}-" . md5($script) . '.json',
+            $root . '/languages/' . $file,
             json_encode([
                 'translation-revision-date' => gmdate('Y-m-d H:i:sO'),
-                'generator'                 => 'crnube-docs/bin/translations.php',
+                'generator'                 => $domain . '/bin/translations.php',
                 'source'                    => $script,
                 'domain'                    => 'messages',
                 'locale_data'               => ['messages' => $jed],
@@ -129,5 +159,13 @@ foreach ($locales as $locale) {
     }
 }
 
-echo count($found) . ' strings (' . array_sum(array_map('count', $byScript)) . ' in JS), ' . count($missing) . ' missing, ' . count($locales) . " locales written.\n";
+// JSON files of scripts that were removed or renamed.
+foreach (glob($root . "/languages/{$domain}-es_*-*.json") ?: [] as $json) {
+    if (!isset($current[basename($json)])) {
+        unlink($json);
+    }
+}
+
+echo count($found) . ' strings (' . array_sum(array_map('count', $byScript)) . ' in JS), ' . count($missing) . ' missing, '
+    . ($unused !== [] ? count($unused) . ' unused (run with --prune), ' : '') . count($locales) . " locales written.\n";
 exit($missing === [] ? 0 : 1);

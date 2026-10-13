@@ -10,7 +10,6 @@ import { useDebounce } from '@wordpress/compose';
 import {
 	Button,
 	FormFileUpload,
-	Modal,
 	SearchControl,
 	SelectControl,
 	ToggleControl,
@@ -21,7 +20,7 @@ import DocumentList from './components/DocumentList';
 import BulkBar from './components/BulkBar';
 import UploadPanel from './components/UploadPanel';
 import { CategoryModal, ConfirmModal } from './components/Modals';
-import { AccessForm } from './components/AccessPicker';
+import { categoryActions } from './extensions';
 import { NoticeList, useNotices } from './components/Notices';
 import {
 	DOC_DRAG_TYPE,
@@ -74,6 +73,7 @@ export default function App() {
 	);
 	const [ dragging, setDragging ] = useState( false );
 	const [ modal, setModal ] = useState( null );
+	const extraActions = useMemo( () => categoryActions(), [] );
 
 	const tree = useMemo(
 		() => buildTree( categoryData.categories ),
@@ -451,30 +451,6 @@ export default function App() {
 		}
 	};
 
-	const saveCategoryAccess = async ( category, access, groups ) => {
-		try {
-			setCategoryData(
-				await api.setCategoryAccess(
-					category.id,
-					access === 'inherit' ? '' : access,
-					groups
-				)
-			);
-			setModal( null );
-			notifySuccess(
-				access === 'private'
-					? __(
-							'Category made private. Its files were moved to the protected folder.',
-							'crnube-docs'
-					  )
-					: __( 'Access updated.', 'crnube-docs' )
-			);
-			loadDocuments();
-		} catch ( e ) {
-			notifyError( api.errorMessage( e ) );
-		}
-	};
-
 	/** Drag and drop in the tree: reorder a category or put it inside another one. */
 	const dropCategory = async ( id, parent, index ) => {
 		try {
@@ -713,11 +689,9 @@ export default function App() {
 					uploadFiles( files, categoryId )
 				}
 				onMoveCategory={ dropCategory }
-				onAccess={
-					config.canManageAccess
-						? ( category ) =>
-								setModal( { type: 'access', category } )
-						: null
+				extraActions={ extraActions }
+				onExtraAction={ ( action, category ) =>
+					setModal( { type: 'extension', action, category } )
 				}
 			/>
 
@@ -965,36 +939,15 @@ export default function App() {
 					onClose={ () => setModal( null ) }
 				/>
 			) }
-			{ modal?.type === 'access' && (
-				<Modal
-					title={ sprintf(
-						/* translators: %s: category name */
-						__( 'Who can open "%s"', 'crnube-docs' ),
-						modal.category.name
-					) }
-					onRequestClose={ () => setModal( null ) }
-					size="small"
-				>
-					<p className="crnd-muted">
-						{ __(
-							'Applies to every document in this category and its subcategories, unless a document or subcategory has its own setting.',
-							'crnube-docs'
-						) }
-					</p>
-					<AccessForm
-						mode={ modal.category.access || 'inherit' }
-						groups={ modal.category.access_groups || [] }
-						inheritLabel={ __(
-							'Same as the parent category (public at the top level)',
-							'crnube-docs'
-						) }
-						onCancel={ () => setModal( null ) }
-						onSave={ ( access, groups ) =>
-							saveCategoryAccess( modal.category, access, groups )
-						}
-					/>
-				</Modal>
-			) }
+			{ modal?.type === 'extension' &&
+				modal.action.render( {
+					category: modal.category,
+					close: () => setModal( null ),
+					setCategoryData,
+					reloadDocuments: loadDocuments,
+					notifySuccess,
+					notifyError,
+				} ) }
 			{ modal?.type === 'confirm' && (
 				<ConfirmModal
 					title={ modal.title }

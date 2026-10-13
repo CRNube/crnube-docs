@@ -50,16 +50,6 @@ final class CategoriesController
             ],
         ]);
 
-        register_rest_route($ns, '/categories/(?P<id>\d+)/access', [
-            'methods'             => \WP_REST_Server::CREATABLE,
-            'callback'            => [$this, 'access'],
-            'permission_callback' => static fn (): bool => current_user_can(Capabilities::MANAGE_ACCESS),
-            'args'                => [
-                'id'     => ['type' => 'integer', 'required' => true],
-                'access' => ['type' => 'string', 'required' => true, 'enum' => DocumentAccess::TERM_MODES],
-                'groups' => ['type' => 'array', 'items' => ['type' => 'integer', 'minimum' => 1], 'default' => []],
-            ],
-        ]);
 
         // Drag and drop in the tree: put a category inside `parent`, at position `index` among its siblings.
         register_rest_route($ns, '/categories/move', [
@@ -191,16 +181,6 @@ final class CategoriesController
         return $this->index();
     }
 
-    /** Makes a category (and what is below it) public, private, or back to inheriting. */
-    public function access(\WP_REST_Request $request): \WP_REST_Response|\WP_Error
-    {
-        $id = (int) $request['id'];
-        if (!term_exists($id, CategoryTaxonomy::NAME)) {
-            return new \WP_Error('crnd_not_found', __('The category does not exist.', 'crnube-docs'), ['status' => 404]);
-        }
-        DocumentAccess::saveForCategory($id, (string) $request['access'], (array) $request['groups']);
-        return $this->index();
-    }
 
     public function move(\WP_REST_Request $request): \WP_REST_Response|\WP_Error
     {

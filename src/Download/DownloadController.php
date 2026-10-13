@@ -4,8 +4,7 @@ declare(strict_types=1);
 namespace CRNube\Docs\Download;
 
 use CRNube\Docs\Access\AccessPolicy;
-use CRNube\Docs\Access\PrivateStorage;
-use CRNube\Docs\Analytics\Tracker;
+use CRNube\Docs\Analytics\Counter;
 use CRNube\Docs\Domain\Document;
 use CRNube\Docs\Domain\DocumentPostType;
 use CRNube\Docs\Domain\FileTypes;
@@ -22,7 +21,7 @@ final class DownloadController
 
     public function __construct(
         private readonly AccessPolicy $access,
-        private readonly Tracker $tracker,
+        private readonly Counter $counter,
     ) {
     }
 
@@ -103,7 +102,7 @@ final class DownloadController
 
         if (sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD'] ?? 'get')) !== 'head') {
             // A "view" of a file the browser cannot show is served as a download.
-            $this->tracker->record($document, $mode === 'view' && $document->isViewable() ? 'view' : 'download', $user);
+            $this->counter->record($document, $mode === 'view' && $document->isViewable() ? 'view' : 'download', $user);
         }
 
         do_action('crnd_before_download', $document, $mode, $user);
@@ -117,7 +116,7 @@ final class DownloadController
         $inline = $mode === 'view' && $document->isViewable();
 
         // Public files are sent to their URL; restricted ones never leave this controller.
-        if ($inline && !$document->restricted && !PrivateStorage::isPrivateFile($document->fileId)) {
+        if ($inline && !$document->restricted && !self::inPrivateFolder($document->fileId)) {
             $url = wp_get_attachment_url($document->fileId);
             if ($url) {
                 wp_redirect($url, 302, 'CRNube Docs'); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
@@ -126,6 +125,16 @@ final class DownloadController
         }
 
         $this->stream($document, $inline);
+    }
+
+    /**
+     * Files in a private folder (uploads/crnd-private-…, where the protected area keeps
+     * restricted files) are never sent to their URL, even if the document became public
+     * and the file has not been moved back yet.
+     */
+    public static function inPrivateFolder(int $fileId): bool
+    {
+        return str_starts_with((string) get_post_meta($fileId, '_wp_attached_file', true), 'crnd-private-');
     }
 
     private function stream(Document $document, bool $inline = false): never

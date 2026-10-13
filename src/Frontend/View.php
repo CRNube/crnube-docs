@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace CRNube\Docs\Frontend;
 
 use CRNube\Docs\Access\AccessPolicy;
-use CRNube\Docs\Access\Portal;
+
 use CRNube\Docs\Domain\CategoryNode;
 use CRNube\Docs\Domain\Document;
 use CRNube\Docs\Domain\DocumentTree;
@@ -28,7 +28,6 @@ final class View
         private readonly Settings $settings,
         public readonly string $id,
         private readonly ?AccessPolicy $access = null,
-        private readonly ?Portal $portal = null,
     ) {
     }
 
@@ -54,7 +53,14 @@ final class View
             return '';
         }
         $target = $this->viewUrl($document);
-        return $this->portal !== null ? $this->portal->loginUrl($target) : wp_login_url($target);
+        /**
+         * Where visitors sign in to open a restricted document (the members' portal of
+         * CRNube Docs Pro, a single sign-on page…).
+         *
+         * @param string $url    wp-login.php, coming back to the document.
+         * @param string $target The document URL to return to.
+         */
+        return (string) apply_filters('crnd_login_url', wp_login_url($target), $target);
     }
 
     public function option(string $key): mixed

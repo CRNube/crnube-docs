@@ -2,7 +2,7 @@
 
 Gestor de documentos para WordPress: categorías de varios niveles que se contraen, búsqueda, filtro por año y diseño configurable por sitio. Hecho para publicar estados financieros, informes y documentos normativos de cooperativas.
 
-**Requisitos:** PHP 8.1+, WordPress 6.5+.
+**Requisitos:** PHP 8.1+, WordPress 6.5+. Listo para el directorio de WordPress.org (`readme.txt`); el área protegida y los reportes están en el complemento **CRNube Docs Pro**.
 
 ## Uso
 
@@ -69,37 +69,22 @@ Para mostrar los documentos en el sitio hay tres caminos, todos con las mismas o
 
 Cuando todas las páginas estén revisadas se puede desactivar FIVO Docs; los archivos quedan en la biblioteca de medios.
 
-## Área protegida
+## Contadores de vistas y descargas
 
-1. **Documentos › Acceso**: cree grupos (*Junta Directiva*, *Delegados 2026*…) y agregue personas por correo, con fecha de vencimiento opcional, o **importe un CSV** (columnas nombre, correo, vence; `;` o `,`; fechas AAAA-MM-DD o DD/MM/AAAA). Puede avisarles por correo con el enlace al portal. Quien no tiene cuenta recibe una con el rol **Miembro de documentos** (sin acceso al admin).
-2. **Biblioteca**: en el menú de una categoría, **Quién puede abrirla…** → *Solo miembros* de uno o varios grupos (ninguno marcado = cualquier miembro). Aplica a sus subcategorías. Cada documento puede tener su propia excepción en la columna **Acceso** (o en la caja "Quién puede abrirlo" de la edición clásica).
-3. **Ajustes › Área protegida**: **Crear la página del portal** (`[crnube_docs_portal]`), mostrar los privados con candado u ocultarlos, y duración de la sesión.
+Cada documento muestra en la Biblioteca cuántas veces se vio y se descargó. *Vista* es abrirlo en el navegador (botón Ver o el título); *Descarga* es el botón Descargar. No se cuentan bots, precargas del navegador ni clics repetidos de la misma persona en 30 segundos. No se guarda nada del visitante: la clave anónima que evita contar dos veces cambia cada día y dura 30 segundos. Se puede apagar en **Ajustes › Avanzado**.
 
-- **Ingreso sin contraseña**: el miembro escribe su correo y recibe un código de 6 dígitos (10 minutos, un solo uso, 5 intentos). No se revela si un correo tiene acceso. Al vencer la membresía pierde el acceso solo.
-- **Archivos privados**: se mueven a `uploads/crnd-private-{aleatorio}/` (con `.htaccess`/`web.config` que niegan todo); su URL directa deja de funcionar y solo se entregan tras verificar permisos, sin caché. La pantalla Acceso comprueba por HTTP que el servidor realmente los bloquea; en **Nginx** agregue `location ~* /wp-content/uploads/crnd-private- { deny all; }`.
-- Un documento en varias categorías es privado si alguna lo es. Si se borra un grupo, sus documentos quedan solo para el personal (nunca se abren a todos por error).
-- Cada vista/descarga privada queda en **Reportes** con el nombre del usuario.
-- `[crnube_docs_portal category="actas"]` muestra en el portal solo esa categoría.
+## CRNube Docs Pro
 
-## Reportes
+El complemento **CRNube Docs Pro** (repositorio aparte, `crnube-docs-pro`) agrega:
 
-**Documentos › Reportes** muestra, para el periodo elegido (7, 30 o 90 días, este año, 12 meses o un rango propio) y opcionalmente para una categoría o un documento:
+- **Área protegida**: grupos con vencimiento, portal de asociados con código por correo (`[crnube_docs_portal]` y widget de Elementor) y archivos privados fuera del alcance público.
+- **Reportes**: quién vio o descargó qué y cuándo, dispositivo, navegador, país, hora del día y exportación CSV.
 
-- Descargas, vistas, visitantes únicos y documentos con actividad, comparados con el periodo anterior.
-- Gráfico de actividad en el tiempo (por día, o por mes en periodos largos), con los datos también en tabla.
-- Documentos más consultados, actividad por categoría, dispositivos, navegadores, sistemas, países y hora del día.
-- Registro de cada vista o descarga: fecha y hora, documento, dispositivo, navegador, sistema, país, página de origen y usuario (si inició sesión).
-- Exportación CSV para Excel: **detalle** (una fila por evento) o **resumen por documento**.
-
-Desde la Biblioteca, el menú de cada documento tiene **Ver estadísticas**.
-
-**Qué cuenta**: *Vista* es abrir el documento en el navegador (botón Ver o el título); *Descarga* es el botón Descargar. No se cuentan bots, precargas del navegador ni clics repetidos de la misma persona en 30 segundos.
-
-**Privacidad (Ley 8968)**: no se guarda la IP ni el navegador completo. Cada visitante recibe una clave anónima que cambia cada día. Quien envía "No rastrear" / *Global Privacy Control* se cuenta sin dispositivo ni país. El historial se borra solo después del plazo elegido en Ajustes (24 meses por defecto). El país solo se registra si el servidor lo informa (por ejemplo, detrás de Cloudflare); para servidores con proxy propio existe el filtro `crnd_visitor_ip`, y `crnd_visitor_country` para otra fuente de país.
+Sin Pro, este plugin funciona completo. Si se desactiva Pro, los documentos que estaban restringidos **siguen cerrados**: solo el personal puede abrirlos (`StaffOnlyPolicy`), y la Biblioteca lo avisa. Los grupos, el historial y los ajustes de Pro se conservan para cuando vuelva a activarse.
 
 ## Permisos
 
-| Rol | Documentos y categorías | Reportes | Acceso (grupos) | Ajustes |
+| Rol | Documentos y categorías | Reportes (Pro) | Acceso (Pro) | Ajustes |
 |---|---|---|---|---|
 | Administrador | ✔ | ✔ | ✔ | ✔ |
 | Editor | ✔ | ✔ | ✔ | — |
@@ -108,13 +93,14 @@ Desde la Biblioteca, el menú de cada documento tiene **Ver estadísticas**.
 
 ## Descargas
 
-Los enlaces apuntan a `/doc-download/{id}/view|download/`, nunca al archivo directo: no se rompen al reemplazar el archivo, cuentan descargas y son el único punto donde se verificará el acceso cuando exista el área protegida (`crnd_access_policy`).
+Los enlaces apuntan a `/doc-download/{id}/view|download/`, nunca al archivo directo: no se rompen al reemplazar el archivo, cuentan descargas y son el único punto donde se verifica el acceso (`crnd_access_policy`).
 
 ## Personalización para desarrolladores
 
 - **Plantillas**: copie `templates/{tree,sections,grid,list}.php` o `templates/parts/*.php` a `{tema}/crnube-docs/`.
 - **CSS**: todas las reglas usan variables (`--crnd-primary`, `--crnd-radius`, …) sobre `.crnd`.
-- **Filtros**: `crnd_presets`, `crnd_access_policy`, `crnd_allowed_mimes`, `crnd_download_base`, `crnd_sendfile_header`, `crnd_template_path`, `crnd_tree_limit`. **Acciones**: `crnd_loaded`, `crnd_before_download`.
+- **Filtros**: `crnd_presets`, `crnd_access_policy`, `crnd_login_url`, `crnd_allowed_mimes`, `crnd_download_base`, `crnd_sendfile_header`, `crnd_template_path`, `crnd_tree_limit`, `crnd_visitor_ip`. **Acciones**: `crnd_loaded`, `crnd_before_download`, `crnd_hit` (cada vista o descarga contada).
+- **Para complementos** (así se conecta Pro): `crnd_settings_defaults` + `crnd_settings_sanitize` (ajustes propios en la misma opción; se conservan si el complemento se desactiva), acción `crnd_settings_cards` (tarjetas en Ajustes, con `SettingsPage::fieldName()`), `crnd_library_config` + acción `crnd_library_enqueue` (datos y scripts de la Biblioteca), hooks JS `crnd.library.documentColumns` y `crnd.library.categoryActions` (ver `assets/src/library/extensions.js`), `crnd_rest_document`, `crnd_rest_document_args`, `crnd_rest_document_update` y `crnd_submenu_order`.
 
 ## Desarrollo
 
@@ -126,6 +112,7 @@ npm run start           # lo mismo, recompilando al guardar
 composer check          # PHPCS (seguridad WordPress) + PHPStan nivel 6
 npm run lint:js         # ESLint + Prettier (estándar de WordPress)
 composer translations   # traducciones PHP y JSON de JS para todos los locales es_*; falla si falta un texto
+php bin/translations.php --prune   # además quita del archivo fuente los textos que ya no se usan
 ```
 
 Los textos del código están en inglés; la traducción fuente es `languages/crnube-docs-es_CR.l10n.php` (PHP y JS).

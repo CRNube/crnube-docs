@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace CRNube\Docs\Integrations\Elementor;
 
 /**
- * Elementor widgets for the library and the members' portal. They call the same renderer
- * as the shortcodes, so a widget and its shortcode always look and behave the same.
- * Loaded only when Elementor is active.
+ * Elementor widget for the library, in a "CRNube Docs" panel category that add-ons can
+ * also use. It calls the same renderer as the shortcode, so both always look and behave
+ * the same. Loaded only when Elementor is active.
  */
 final class Integration
 {
@@ -33,7 +33,6 @@ final class Integration
     public function registerWidgets($widgets): void
     {
         $widgets->register(new DocumentsWidget());
-        $widgets->register(new PortalWidget());
     }
 
     public function registerAssets(): void

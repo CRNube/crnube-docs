@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace CRNube\Docs\Rest;
 
 use CRNube\Docs\Access\DocumentAccess;
-use CRNube\Docs\Capabilities;
+
 use CRNube\Docs\Domain\CategoryOrder;
 use CRNube\Docs\Domain\CategoryTaxonomy;
 use CRNube\Docs\Domain\Document;
@@ -91,15 +91,19 @@ final class DocumentsController
                 'methods'             => 'PATCH',
                 'callback'            => [$this, 'update'],
                 'permission_callback' => [$this, 'canEditItem'],
-                'args'                => $id + [
+                /**
+                 * Fields an add-on can accept when a document is edited from the library
+                 * (handled in its `crnd_rest_document_update` filter).
+                 *
+                 * @param array<string, array<string, mixed>> $args
+                 */
+                'args'                => $id + (array) apply_filters('crnd_rest_document_args', [
                     'title'      => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
                     'status'     => ['type' => 'string', 'enum' => self::STATUSES],
                     'year'       => ['type' => 'string', 'pattern' => '^(\d{4})?$'],
                     'categories' => ['type' => 'array', 'items' => ['type' => 'integer', 'minimum' => 1]],
                     'menu_order' => ['type' => 'integer'],
-                    'access'        => ['type' => 'string', 'enum' => DocumentAccess::MODES],
-                    'access_groups' => ['type' => 'array', 'items' => ['type' => 'integer', 'minimum' => 1], 'default' => []],
-                ],
+                ]),
             ],
             [
                 'methods'             => \WP_REST_Server::DELETABLE,
@@ -300,12 +304,17 @@ final class DocumentsController
             // Saved before wp_update_post(), whose save_post hook files the document under this year.
             update_post_meta($postId, DocumentPostType::META_YEAR, (string) $request['year']);
         }
-        if ($request->has_param('access')) {
-            if (!current_user_can(Capabilities::MANAGE_ACCESS)) {
-                return new \WP_Error('crnd_cannot_manage_access', __('You cannot change who may open documents.', 'crnube-docs'), ['status' => 403]);
-            }
-            // Before wp_update_post(): its save_post hook moves the file where the new access says.
-            DocumentAccess::saveForPost($postId, (string) $request['access'], (array) $request['access_groups']);
+        /**
+         * Saves an add-on's fields, before wp_update_post() so its save_post hooks see
+         * them. Return a WP_Error to stop the update.
+         *
+         * @param \WP_Error|null   $error
+         * @param int              $postId
+         * @param \WP_REST_Request $request
+         */
+        $error = apply_filters('crnd_rest_document_update', null, $postId, $request);
+        if ($error instanceof \WP_Error) {
+            return $error;
         }
         if ($request->has_param('categories')) {
             $ids = $this->existingCategories((array) $request['categories']);
@@ -398,7 +407,7 @@ final class DocumentsController
             ];
         }
 
-        return [
+        $item = [
             'id'           => $post->ID,
             'title'        => $post->post_title,
             'status'       => $post->post_status,
@@ -424,6 +433,11 @@ final class DocumentsController
             'restricted'    => $document->restricted,
             'groups'        => $document->groupIds,
         ];
+        /**
+         * @param array<string, mixed> $item
+         * @param \WP_Post             $post
+         */
+        return (array) apply_filters('crnd_rest_document', $item, $post);
     }
 
     /**

@@ -12,10 +12,9 @@ final class Capabilities
     public const MANAGE_CATEGORIES = 'manage_crnd_categories';
     public const MANAGE_SETTINGS   = 'manage_crnd_settings';
     public const VIEW_REPORTS      = 'view_crnd_reports';
+    /** Used by CRNube Docs Pro (reports, protected area); granted here with the rest. */
     public const MANAGE_ACCESS     = 'manage_crnd_access';
     public const MANAGER_ROLE      = 'crnd_manager';
-    /** Members of the protected area: they can sign in and open documents, nothing else. */
-    public const MEMBER_ROLE       = 'crnd_member';
 
     /** Primitive capabilities the document post type maps its meta capabilities to. */
     public const DOCUMENT_CAPS = [
@@ -49,9 +48,7 @@ final class Capabilities
                 'upload_files' => true,
             ]);
         }
-        if (!get_role(self::MEMBER_ROLE)) {
-            add_role(self::MEMBER_ROLE, __('Document member', 'crnube-docs'), ['read' => true]);
-        }
+
 
         foreach (['administrator', 'editor', self::MANAGER_ROLE] as $roleName) {
             $role = get_role($roleName);

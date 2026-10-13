@@ -56,16 +56,20 @@ final class LibraryPage
         if (empty($submenu[self::SLUG])) {
             return;
         }
-        $weight = [
+        /**
+         * Position of each screen in the "Documents" menu; add-on screens without one go
+         * in the middle (5), before Import and Settings.
+         *
+         * @param array<string, int> $weight menu slug => position
+         */
+        $weight = (array) apply_filters('crnd_submenu_order', [
             self::SLUG                                      => 0,
             'edit.php?post_type=' . DocumentPostType::NAME  => 1,
             'post-new.php?post_type=' . DocumentPostType::NAME => 2,
             $this->categoriesSlug()                         => 3,
-            ReportsPage::SLUG                               => 4,
-            AccessPage::SLUG                                => 5,
             MigrationPage::SLUG                             => 8,
             SettingsPage::SLUG                              => 9,
-        ];
+        ]);
         usort($submenu[self::SLUG], static fn (array $a, array $b): int => ($weight[$a[2]] ?? 5) <=> ($weight[$b[2]] ?? 5));
     }
 
@@ -114,7 +118,14 @@ final class LibraryPage
 
         $extensions = array_keys(FileTypes::allowedMimes());
 
-        wp_add_inline_script('crnd-library', 'window.crndLibrary = ' . wp_json_encode([
+        /**
+         * Settings handed to the library app as window.crndLibrary. Add-ons add their own
+         * keys here, and their scripts extend the app through the `crnd.library.*` hooks
+         * of @wordpress/hooks (see assets/src/library/extensions.js).
+         *
+         * @param array<string, mixed> $config
+         */
+        $config = (array) apply_filters('crnd_library_config', [
             'restUrl'          => esc_url_raw(rest_url('crnd/v1/')),
             'nonce'            => wp_create_nonce('wp_rest'),
             'maxUploadSize'    => wp_max_upload_size(),
@@ -126,14 +137,12 @@ final class LibraryPage
             'newDocumentUrl'   => admin_url('post-new.php?post_type=' . DocumentPostType::NAME),
             'shortcodeTag'     => Shortcode::TAG,
             'currentYear'      => (int) wp_date('Y'),
-            'reportsUrl'       => current_user_can(Capabilities::VIEW_REPORTS) ? ReportsPage::url() : '',
-            'canManageAccess'  => current_user_can(Capabilities::MANAGE_ACCESS),
-            'accessUrl'        => current_user_can(Capabilities::MANAGE_ACCESS) ? admin_url('admin.php?page=' . AccessPage::SLUG) : '',
-            'groups'           => array_map(
-                static fn (array $g): array => ['id' => $g['id'], 'name' => $g['name']],
-                \CRNube\Docs\Access\Groups::all()
-            ),
-        ]) . ';', 'before');
+            'reportsUrl'       => '',
+        ]);
+        wp_add_inline_script('crnd-library', 'window.crndLibrary = ' . wp_json_encode($config) . ';', 'before');
+
+        /** Add-on scripts for the library: enqueue them here, before the app starts. */
+        do_action('crnd_library_enqueue');
     }
 
     public function render(): void

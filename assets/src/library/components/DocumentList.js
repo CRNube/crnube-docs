@@ -1,9 +1,10 @@
-import { useRef, useState } from '@wordpress/element';
+import { useMemo, useRef, useState } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { Spinner } from '@wordpress/components';
 import Checkbox from './Checkbox';
 import DocumentRow from './DocumentRow';
 import { DOC_DRAG_TYPE } from '../utils';
+import { documentColumns } from '../extensions';
 
 const SortHeader = ( { field, label, sort, onSort, sortable } ) => {
 	if ( ! sortable ) {
@@ -137,7 +138,8 @@ export default function DocumentList( {
 
 	const allChecked =
 		items.length > 0 && items.every( ( item ) => checked.has( item.id ) );
-	const columns = reorderable ? 10 : 9;
+	const extraColumns = useMemo( () => documentColumns(), [] );
+	const columns = ( reorderable ? 9 : 8 ) + extraColumns.length;
 
 	const indicatorFor = ( id ) => {
 		if ( indicator?.id !== id ) {
@@ -283,9 +285,14 @@ export default function DocumentList( {
 						<th className="crnd-col-cats">
 							{ __( 'Categories', 'crnube-docs' ) }
 						</th>
-						<th className="crnd-col-access">
-							{ __( 'Access', 'crnube-docs' ) }
-						</th>
+						{ extraColumns.map( ( column ) => (
+							<th
+								key={ column.id }
+								className={ column.className }
+							>
+								{ column.label }
+							</th>
+						) ) }
 						<th className="crnd-col-year">
 							{ __( 'Year', 'crnube-docs' ) }
 						</th>
@@ -340,6 +347,7 @@ export default function DocumentList( {
 							checked={ checked.has( doc.id ) }
 							onToggle={ () => onToggle( doc.id ) }
 							tree={ tree }
+							extraColumns={ extraColumns }
 							byId={ byId }
 							reorderable={ reorderable }
 							dropIndicator={ indicatorFor( doc.id ) }

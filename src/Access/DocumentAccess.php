@@ -17,6 +17,9 @@ use CRNube\Docs\Domain\DocumentPostType;
  *   choice), for the union of their groups.
  * - "Private" with no groups selected means "any member" (anyone with an active
  *   membership in some group).
+ *
+ * This class only reads the settings. The protected area (CRNube Docs Pro) writes them
+ * and decides who is a member; without it, restricted documents stay staff-only.
  */
 final class DocumentAccess
 {
@@ -96,45 +99,8 @@ final class DocumentAccess
         return self::resolve($postId, $ids);
     }
 
-    /**
-     * @param list<int> $groups
-     */
-    public static function saveForPost(int $postId, string $mode, array $groups): void
-    {
-        $mode = in_array($mode, self::MODES, true) ? $mode : 'inherit';
-        update_post_meta($postId, self::META_ACCESS, $mode);
-        update_post_meta($postId, self::META_GROUPS, $mode === 'private' ? self::validGroups($groups) : []);
-        do_action('crnd_access_changed', [$postId]);
-    }
-
-    /**
-     * @param list<int> $groups
-     */
-    public static function saveForCategory(int $termId, string $mode, array $groups): void
-    {
-        $mode = in_array($mode, self::TERM_MODES, true) ? $mode : '';
-        update_term_meta($termId, self::TERM_ACCESS, $mode);
-        update_term_meta($termId, self::TERM_GROUPS, $mode === 'private' ? self::validGroups($groups) : []);
-
-        // Every document in this category or below may have changed.
-        $children = get_term_children($termId, CategoryTaxonomy::NAME);
-        $terms    = [$termId, ...(is_array($children) ? array_map('intval', $children) : [])];
-        $posts    = get_objects_in_term($terms, CategoryTaxonomy::NAME);
-        do_action('crnd_access_changed', is_array($posts) ? array_map('intval', $posts) : []);
-    }
-
-    /**
-     * @param array<mixed> $groups
-     * @return list<int>
-     */
-    private static function validGroups(array $groups): array
-    {
-        $valid = array_keys(Groups::names());
-        return array_values(array_intersect(array_unique(array_map('intval', $groups)), $valid));
-    }
-
     /** @return list<int> */
-    private static function ids(mixed $value): array
+    public static function ids(mixed $value): array
     {
         return is_array($value) ? array_values(array_map('intval', $value)) : [];
     }

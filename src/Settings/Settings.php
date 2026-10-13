@@ -54,7 +54,7 @@ final class Settings
     /** @return array<string, mixed> */
     public static function defaults(): array
     {
-        return [
+        $defaults = [
             // Design
             'primary'       => '#0f4c97',
             'accent'        => '#16a34a',
@@ -87,17 +87,20 @@ final class Settings
             'label_view'     => '',
             'label_search'   => '',
             'label_empty'    => '',
-            // Protected area
-            'portal_page'      => 0,
+            // Restricted documents in public libraries (the protected area marks them)
             'private_display'  => 'lock',
-            'session_hours'    => 8,
-            // Statistics
+            // View and download counters
             'track_enabled'    => true,
-            'respect_gpc'      => true,
-            'retention_months' => 24,
             // Advanced
             'delete_data'   => false,
         ];
+        /**
+         * Add-on settings, stored in the same option. Each one needs its own validation
+         * in the `crnd_settings_sanitize` filter.
+         *
+         * @param array<string, mixed> $defaults
+         */
+        return (array) apply_filters('crnd_settings_defaults', $defaults);
     }
 
     /** @return array<string, mixed> */
@@ -140,16 +143,16 @@ final class Settings
     {
         $input    = is_array($input) ? wp_unslash($input) : [];
         $defaults = self::defaults();
-        $clean    = [];
+        // Values of keys no longer known (an add-on that is deactivated now) are kept as
+        // they were saved, already validated, so they come back with the add-on.
+        $stored   = get_option(self::OPTION, []);
+        $clean    = is_array($stored) ? array_diff_key($stored, $defaults) : [];
 
         foreach ($defaults as $key => $default) {
             $value = $input[$key] ?? null;
             $clean[$key] = match (true) {
                 is_bool($default) => !empty($value),
                 $key === 'radius' => max(0, min(32, (int) ($value ?? $default))),
-                $key === 'retention_months' => max(0, min(120, (int) ($value ?? $default))),
-                $key === 'session_hours'    => max(1, min(720, (int) ($value ?? $default))),
-                $key === 'portal_page'      => get_post_type(absint($value)) === 'page' ? absint($value) : 0,
                 $key === 'private_display'  => self::oneOf($value, self::PRIVATE_DISPLAY, $default),
                 in_array($key, ['primary', 'accent', 'text', 'muted', 'surface', 'surface_alt', 'border'], true)
                     => sanitize_hex_color((string) $value) ?: $default,
@@ -164,7 +167,14 @@ final class Settings
                 default                 => sanitize_text_field((string) $value),
             };
         }
-        return $clean;
+        /**
+         * Validates the add-on settings (for any other key, $clean holds the default's type
+         * only: booleans, or text run through sanitize_text_field()).
+         *
+         * @param array<string, mixed> $clean
+         * @param array<string, mixed> $input Raw, unslashed values from the form.
+         */
+        return (array) apply_filters('crnd_settings_sanitize', $clean, $input);
     }
 
     /** A CSS font-family list: letters, digits, spaces, commas, quotes and hyphens only. */

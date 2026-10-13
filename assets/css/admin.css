@@ -634,41 +634,6 @@
     display: none;
 }
 
-/* ---------- "Who can open it" box ---------- */
-
-.crnd-accessbox__option {
-    display: block;
-    margin: 0 0 6px;
-}
-
-.crnd-accessbox__groups {
-    margin: 6px 0 0 22px;
-}
-
-.crnd-accessbox__groups[hidden] {
-    display: none;
-}
-
-.crnd-accessbox__groups legend {
-    margin-bottom: 4px;
-    color: #646970;
-}
-
-.crnd-accessbox__groups label {
-    display: block;
-    margin-bottom: 4px;
-}
-
-.crnd-accessbox__now {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin: 12px 0 0;
-    padding-top: 10px;
-    color: #50575e;
-    border-top: 1px solid #f0f0f1;
-}
-
 /* ---------- Import from FIVO Docs ---------- */
 
 .crnd-migrate__intro {

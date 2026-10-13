@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace CRNube\Docs\Frontend;
 
 use CRNube\Docs\Access\AccessPolicy;
-use CRNube\Docs\Access\Portal;
+
 use CRNube\Docs\Domain\Document;
 use CRNube\Docs\Domain\DocumentRepository;
 use CRNube\Docs\Domain\DocumentTree;
@@ -30,7 +30,6 @@ final class Renderer
         private readonly Settings $settings,
         private readonly DocumentRepository $documents,
         private readonly AccessPolicy $access,
-        private readonly Portal $portal,
     ) {
     }
 
@@ -81,7 +80,7 @@ final class Renderer
     {
         Assets::enqueue();
 
-        $view = new View($tree, $options, $this->settings, 'crnd-' . ++self::$instances, $this->access, $this->portal);
+        $view = new View($tree, $options, $this->settings, 'crnd-' . ++self::$instances, $this->access);
 
         ob_start();
         TemplateLoader::include($options['layout'] . '.php', ['view' => $view]);

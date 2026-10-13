@@ -1,22 +1,27 @@
 <?php
 /**
- * One document row.
+ * One document row (layouts Tree, Sections and List).
  *
  * @var \CRNube\Docs\Frontend\View   $view
  * @var \CRNube\Docs\Domain\Document $document
+ * @var list<int>                    $categories Optional: category IDs, for the List filter.
+ * @var list<string>                 $labels     Optional: category names shown on the row.
  */
 
 defined('ABSPATH') || exit;
 
-$crnd_meta     = $view->meta($document);
-$crnd_can_view = $view->showViewButton($document);
-$crnd_title    = $crnd_can_view ? $view->viewUrl($document) : $view->downloadUrl($document);
+$crnd_categories = $categories ?? [];
+$crnd_labels     = $labels ?? [];
+$crnd_meta       = $view->meta($document);
+$crnd_can_view   = $view->showViewButton($document);
+$crnd_title      = $crnd_can_view ? $view->viewUrl($document) : $view->downloadUrl($document);
 ?>
 <li class="crnd-doc crnd-doc--<?php echo esc_attr($document->kind()); ?>"
     data-crnd-doc
     data-id="<?php echo (int) $document->id; ?>"
     data-year="<?php echo esc_attr($document->year); ?>"
-    data-search="<?php echo esc_attr($view->searchText($document)); ?>">
+    <?php if ($crnd_categories !== []) : ?>data-cats="<?php echo esc_attr(implode(' ', $crnd_categories)); ?>"<?php endif; ?>
+    data-search="<?php echo esc_attr($view->searchText($document) . ' ' . implode(' ', $crnd_labels)); ?>">
 
     <span class="crnd-doc__icon"><?php echo $view->fileIconHtml($document); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in Icons::file() ?></span>
 
@@ -34,8 +39,11 @@ $crnd_title    = $crnd_can_view ? $view->viewUrl($document) : $view->downloadUrl
             <p class="crnd-doc__excerpt"><?php echo esc_html($document->excerpt); ?></p>
         <?php endif; ?>
 
-        <?php if ($crnd_meta !== []) : ?>
+        <?php if ($crnd_meta !== [] || $crnd_labels !== []) : ?>
             <p class="crnd-doc__meta">
+                <?php foreach ($crnd_labels as $crnd_label) : ?>
+                    <span class="crnd-tag"><?php echo esc_html($crnd_label); ?></span>
+                <?php endforeach; ?>
                 <?php foreach ($crnd_meta as $crnd_piece) : ?>
                     <span><?php echo esc_html($crnd_piece); ?></span>
                 <?php endforeach; ?>
@@ -44,19 +52,6 @@ $crnd_title    = $crnd_can_view ? $view->viewUrl($document) : $view->downloadUrl
     </div>
 
     <div class="crnd-doc__actions">
-        <?php if ($crnd_can_view) : ?>
-            <a class="crnd-btn crnd-btn--ghost" href="<?php echo esc_url($view->viewUrl($document)); ?>" target="_blank" rel="noopener">
-                <?php echo $view->iconHtml($document->isExternal() ? 'external' : 'eye'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG markup ?>
-                <span><?php echo esc_html($view->label('view')); ?></span>
-                <span class="crnd-sr-only"><?php echo esc_html($document->title); ?></span>
-            </a>
-        <?php endif; ?>
-        <?php if ($view->showDownloadButton($document)) : ?>
-            <a class="crnd-btn crnd-btn--primary" href="<?php echo esc_url($view->downloadUrl($document)); ?>">
-                <?php echo $view->iconHtml('download'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG markup ?>
-                <span><?php echo esc_html($view->label('download')); ?></span>
-                <span class="crnd-sr-only"><?php echo esc_html($document->title); ?></span>
-            </a>
-        <?php endif; ?>
+        <?php $view->part('actions', ['document' => $document]); ?>
     </div>
 </li>

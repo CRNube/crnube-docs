@@ -17,11 +17,10 @@ final class Renderer
     /** Attributes accepted from a shortcode, block or widget. */
     public const ATTRIBUTES = [
         'category', 'layout', 'title', 'search', 'year_filter', 'counts', 'date', 'size', 'type',
-        'toggle_all', 'open', 'group_by_year', 'orderby', 'order', 'depth', 'primary', 'accent',
+        'toggle_all', 'open', 'group_by_year', 'columns', 'orderby', 'order', 'depth', 'primary', 'accent',
         'header_style', 'density', 'class',
     ];
 
-    public const LAYOUTS = ['tree'];
 
     private static int $instances = 0;
 
@@ -104,7 +103,8 @@ final class Renderer
         return [
             'categories'      => $categories,
             'category_given'  => isset($atts['category']) && $atts['category'] !== '',
-            'layout'          => $pick('layout', self::LAYOUTS, 'tree'),
+            'layout'          => $pick('layout', Settings::LAYOUTS, $s->get('layout')),
+            'columns'         => isset($atts['columns']) ? max(1, min(4, (int) $atts['columns'])) : (int) $s->get('columns'),
             'title'           => isset($atts['title']) ? sanitize_text_field((string) $atts['title']) : '',
             'search'          => $bool('search', (bool) $s->get('search')),
             'year_filter'     => $bool('year_filter', (bool) $s->get('year_filter')),

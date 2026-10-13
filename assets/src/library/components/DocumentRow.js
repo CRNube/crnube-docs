@@ -141,8 +141,16 @@ export default function DocumentRow( {
 				</button>
 			</td>
 			<td className="crnd-col-date">{ doc.date_label }</td>
-			<td className="crnd-col-downloads">
-				{ doc.downloads.toLocaleString() }
+			<td
+				className="crnd-col-downloads"
+				title={ sprintf(
+					/* translators: 1: number of downloads, 2: number of views */
+					__( '%1$s downloads · %2$s views', 'crnube-docs' ),
+					doc.downloads.toLocaleString(),
+					doc.views.toLocaleString()
+				) }
+			>
+				{ ( doc.downloads + doc.views ).toLocaleString() }
 			</td>
 			<td className="crnd-col-actions">
 				<DropdownMenu
@@ -234,6 +242,17 @@ export default function DocumentRow( {
 								<MenuItem icon="edit" href={ doc.edit_url }>
 									{ __( 'Edit all details', 'crnube-docs' ) }
 								</MenuItem>
+								{ config.reportsUrl && (
+									<MenuItem
+										icon="chart-bar"
+										href={ `${ config.reportsUrl }&document=${ doc.id }` }
+									>
+										{ __(
+											'See statistics',
+											'crnube-docs'
+										) }
+									</MenuItem>
+								) }
 							</MenuGroup>
 							{ doc.can_delete && (
 								<MenuGroup>

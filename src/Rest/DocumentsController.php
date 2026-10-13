@@ -403,6 +403,7 @@ final class DocumentsController
             'categories'   => $document->categoryIds,
             'menu_order'   => $post->menu_order,
             'downloads'    => (int) get_post_meta($post->ID, DocumentPostType::META_DOWNLOADS, true),
+            'views'        => (int) get_post_meta($post->ID, DocumentPostType::META_VIEWS, true),
             'edit_url'     => (string) get_edit_post_link($post->ID, 'raw'),
             'view_url'     => DownloadController::url($post->ID, 'view'),
             'can_delete'   => current_user_can('delete_post', $post->ID),

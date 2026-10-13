@@ -61,6 +61,7 @@ final class LibraryPage
             'edit.php?post_type=' . DocumentPostType::NAME  => 1,
             'post-new.php?post_type=' . DocumentPostType::NAME => 2,
             $this->categoriesSlug()                         => 3,
+            ReportsPage::SLUG                               => 4,
             SettingsPage::SLUG                              => 9,
         ];
         usort($submenu[self::SLUG], static fn (array $a, array $b): int => ($weight[$a[2]] ?? 5) <=> ($weight[$b[2]] ?? 5));
@@ -123,6 +124,7 @@ final class LibraryPage
             'newDocumentUrl'   => admin_url('post-new.php?post_type=' . DocumentPostType::NAME),
             'shortcodeTag'     => Shortcode::TAG,
             'currentYear'      => (int) wp_date('Y'),
+            'reportsUrl'       => current_user_can(Capabilities::VIEW_REPORTS) ? ReportsPage::url() : '',
         ]) . ';', 'before');
     }
 

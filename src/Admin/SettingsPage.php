@@ -80,6 +80,17 @@ final class SettingsPage
         wp_enqueue_style('crnd-admin', CRND_URL . 'assets/css/admin.css', [], Assets::version('assets/css/admin.css'));
         Assets::enqueue();
         wp_enqueue_script('crnd-admin-settings', CRND_URL . 'assets/js/admin-settings.js', [], Assets::version('assets/js/admin-settings.js'), true);
+        wp_localize_script('crnd-admin-settings', 'crndSettings', [
+            'option'  => Settings::OPTION,
+            'keys'    => Settings::DESIGN_KEYS,
+            'presets' => array_map(static fn (array $p): array => $p['values'], Settings::presets()),
+            'site'    => sanitize_title(get_bloginfo('name')) ?: 'sitio',
+            'i18n'    => [
+                'applied'  => __('Preset applied. Save the changes to keep it.', 'crnube-docs'),
+                'imported' => __('Design imported. Save the changes to keep it.', 'crnube-docs'),
+                'invalid'  => __('This file is not a CRNube Docs design.', 'crnube-docs'),
+            ],
+        ]);
         wp_enqueue_script('crnd-admin-copy', CRND_URL . 'assets/js/admin-copy.js', [], Assets::version('assets/js/admin-copy.js'), true);
         wp_localize_script('crnd-admin-copy', 'crndCopy', ['copied' => __('Copied!', 'crnube-docs')]);
     }
@@ -107,9 +118,12 @@ final class SettingsPage
                 <?php settings_fields(self::GROUP); ?>
 
                 <div class="crnd-settings__main">
+                    <?php $this->layoutCard($v); ?>
+                    <?php $this->presetsCard(); ?>
                     <?php $this->designCard($v); ?>
                     <?php $this->displayCard($v); ?>
                     <?php $this->labelsCard($v); ?>
+                    <?php $this->statsCard($v); ?>
                     <?php $this->advancedCard($v); ?>
                     <div class="crnd-settings__submit">
                         <?php submit_button(__('Save changes', 'crnube-docs'), 'primary large', 'submit', false); ?>
@@ -130,6 +144,83 @@ final class SettingsPage
                 </aside>
             </form>
         </div>
+        <?php
+    }
+
+    /** @param array<string, mixed> $v */
+    private function layoutCard(array $v): void
+    {
+        $layouts = [
+            'tree'     => [__('Tree', 'crnube-docs'), __('Collapsible groups, any depth.', 'crnube-docs'), 'list-view'],
+            'sections' => [__('Sections', 'crnube-docs'), __('Large headings, subcategories as tiles.', 'crnube-docs'), 'columns'],
+            'grid'     => [__('Grid', 'crnube-docs'), __('A card per document.', 'crnube-docs'), 'grid-view'],
+            'list'     => [__('List', 'crnube-docs'), __('One list with category, year and search filters.', 'crnube-docs'), 'editor-ul'],
+        ];
+        ?>
+        <section class="crnd-card">
+            <header class="crnd-card__header">
+                <h2><?php esc_html_e('Layout', 'crnube-docs'); ?></h2>
+                <span class="crnd-card__hint"><?php esc_html_e('The default for every library; a shortcode can choose another with layout="…".', 'crnube-docs'); ?></span>
+            </header>
+            <div class="crnd-layouts" role="radiogroup" aria-label="<?php esc_attr_e('Layout', 'crnube-docs'); ?>">
+                <?php foreach ($layouts as $key => [$label, $hint, $icon]) : ?>
+                    <label class="crnd-layout">
+                        <input type="radio" name="<?php echo esc_attr($this->name('layout')); ?>" value="<?php echo esc_attr($key); ?>"
+                            <?php checked($v['layout'], $key); ?> data-crnd-layout>
+                        <span class="crnd-layout__box">
+                            <span class="dashicons dashicons-<?php echo esc_attr($icon); ?>" aria-hidden="true"></span>
+                            <strong><?php echo esc_html($label); ?></strong>
+                            <small><?php echo esc_html($hint); ?></small>
+                            <code>layout="<?php echo esc_html($key); ?>"</code>
+                        </span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+            <label class="crnd-field crnd-field--inline" data-crnd-columns-field <?php echo $v['layout'] === 'grid' ? '' : 'hidden'; ?>>
+                <span class="crnd-field__label"><?php esc_html_e('Grid columns', 'crnube-docs'); ?></span>
+                <select name="<?php echo esc_attr($this->name('columns')); ?>" data-crnd-var="--crnd-columns">
+                    <?php foreach ([2, 3, 4] as $columns) : ?>
+                        <option value="<?php echo (int) $columns; ?>" <?php selected((int) $v['columns'], $columns); ?>><?php echo (int) $columns; ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        </section>
+        <?php
+    }
+
+    private function presetsCard(): void
+    {
+        ?>
+        <section class="crnd-card">
+            <header class="crnd-card__header">
+                <h2><?php esc_html_e('Brand presets', 'crnube-docs'); ?></h2>
+                <span class="crnd-card__hint"><?php esc_html_e('Start from a preset, or export this design to reuse it on another site. Nothing changes until you save.', 'crnube-docs'); ?></span>
+            </header>
+            <div class="crnd-presets">
+                <?php foreach (Settings::presets() as $id => $preset) : ?>
+                    <button type="button" class="crnd-preset" data-crnd-preset="<?php echo esc_attr($id); ?>">
+                        <span class="crnd-preset__swatches" aria-hidden="true">
+                            <?php foreach (['primary', 'accent', 'surface_alt'] as $key) : ?>
+                                <span style="background:<?php echo esc_attr((string) $preset['values'][$key]); ?>"></span>
+                            <?php endforeach; ?>
+                        </span>
+                        <span class="crnd-preset__name"><?php echo esc_html($preset['name']); ?></span>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+            <div class="crnd-presets__io">
+                <button type="button" class="button" data-crnd-export>
+                    <span class="dashicons dashicons-download" aria-hidden="true"></span>
+                    <?php esc_html_e('Export design (.json)', 'crnube-docs'); ?>
+                </button>
+                <label class="button">
+                    <span class="dashicons dashicons-upload" aria-hidden="true"></span>
+                    <?php esc_html_e('Import design', 'crnube-docs'); ?>
+                    <input type="file" accept="application/json,.json" data-crnd-import hidden>
+                </label>
+                <span class="crnd-presets__status" data-crnd-preset-status aria-live="polite"></span>
+            </div>
+        </section>
         <?php
     }
 
@@ -295,6 +386,49 @@ final class SettingsPage
     }
 
     /** @param array<string, mixed> $v */
+    private function statsCard(array $v): void
+    {
+        ?>
+        <section class="crnd-card">
+            <header class="crnd-card__header">
+                <h2><?php esc_html_e('Statistics and privacy', 'crnube-docs'); ?></h2>
+                <span class="crnd-card__hint"><?php esc_html_e('IP addresses are never stored: each visitor gets an anonymous key that changes every day.', 'crnube-docs'); ?></span>
+            </header>
+            <div class="crnd-toggles">
+                <label class="crnd-toggle">
+                    <input type="checkbox" name="<?php echo esc_attr($this->name('track_enabled')); ?>" value="1" <?php checked((bool) $v['track_enabled']); ?>>
+                    <span class="crnd-toggle__switch" aria-hidden="true"></span>
+                    <span><?php esc_html_e('Record views and downloads', 'crnube-docs'); ?></span>
+                </label>
+                <label class="crnd-toggle">
+                    <input type="checkbox" name="<?php echo esc_attr($this->name('respect_gpc')); ?>" value="1" <?php checked((bool) $v['respect_gpc']); ?>>
+                    <span class="crnd-toggle__switch" aria-hidden="true"></span>
+                    <span>
+                        <?php esc_html_e('Respect the browser privacy signal', 'crnube-docs'); ?>
+                        <small><?php esc_html_e('Visitors who send "Do Not Track" or "Global Privacy Control" are counted without device or country.', 'crnube-docs'); ?></small>
+                    </span>
+                </label>
+            </div>
+            <label class="crnd-field">
+                <span class="crnd-field__label"><?php esc_html_e('Keep the history for', 'crnube-docs'); ?></span>
+                <select name="<?php echo esc_attr($this->name('retention_months')); ?>">
+                    <?php foreach ([6, 12, 24, 36, 60, 0] as $months) : ?>
+                        <option value="<?php echo (int) $months; ?>" <?php selected((int) $v['retention_months'], $months); ?>>
+                            <?php
+                            echo esc_html($months === 0
+                                ? __('Forever', 'crnube-docs')
+                                /* translators: %d: number of months */
+                                : sprintf(_n('%d month', '%d months', $months, 'crnube-docs'), $months));
+                            ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        </section>
+        <?php
+    }
+
+    /** @param array<string, mixed> $v */
     private function advancedCard(array $v): void
     {
         ?>
@@ -306,7 +440,7 @@ final class SettingsPage
                 <input type="checkbox" name="<?php echo esc_attr($this->name('delete_data')); ?>" value="1" <?php checked((bool) $v['delete_data']); ?>>
                 <span class="crnd-toggle__switch" aria-hidden="true"></span>
                 <span>
-                    <?php esc_html_e('Delete all documents and categories when the plugin is deleted', 'crnube-docs'); ?>
+                    <?php esc_html_e('Delete all documents, categories and statistics when the plugin is deleted', 'crnube-docs'); ?>
                     <small><?php esc_html_e('The files stay in the media library.', 'crnube-docs'); ?></small>
                 </span>
             </label>
@@ -320,7 +454,9 @@ final class SettingsPage
             sprintf('[%s]', Shortcode::TAG)                                         => __('Every category', 'crnube-docs'),
             sprintf('[%s category="informes"]', Shortcode::TAG)                     => __('One category and its subcategories', 'crnube-docs'),
             sprintf('[%s category="informes" group_by_year="yes"]', Shortcode::TAG) => __('Grouped by year', 'crnube-docs'),
-            sprintf('[%s open="first" header_style="solid"]', Shortcode::TAG)       => __('First group open, solid headers', 'crnube-docs'),
+            sprintf('[%s layout="sections" header_style="solid"]', Shortcode::TAG) => __('Sections with solid headers', 'crnube-docs'),
+            sprintf('[%s layout="grid" columns="4"]', Shortcode::TAG)             => __('Grid of cards, 4 columns', 'crnube-docs'),
+            sprintf('[%s layout="list"]', Shortcode::TAG)                         => __('One list with filters', 'crnube-docs'),
             sprintf('[%s primary="#7a1fa2" search="no"]', Shortcode::TAG)           => __('Own color, no search box', 'crnube-docs'),
         ];
         ?>
@@ -339,7 +475,7 @@ final class SettingsPage
             </ul>
             <p class="crnd-usage__attrs">
                 <?php esc_html_e('Other attributes:', 'crnube-docs'); ?>
-                <code>title</code> <code>search</code> <code>year_filter</code> <code>counts</code> <code>date</code> <code>size</code> <code>type</code>
+                <code>layout</code> <code>columns</code> <code>title</code> <code>search</code> <code>open</code> <code>header_style</code> <code>year_filter</code> <code>counts</code> <code>date</code> <code>size</code> <code>type</code>
                 <code>toggle_all</code> <code>orderby</code> <code>order</code> <code>depth</code> <code>accent</code> <code>density</code> <code>class</code>
             </p>
         </section>
@@ -420,9 +556,19 @@ final class SettingsPage
             total: 6,
         );
 
-        $options         = $this->renderer->options([]);
-        $options['open'] = 'first';
-
-        return $this->renderer->renderTree($tree, $options);
+        // Every layout is rendered once; the layout picker only shows the chosen one.
+        $current = (string) $this->settings->get('layout');
+        $html    = '';
+        foreach (Settings::LAYOUTS as $layout) {
+            $options           = $this->renderer->options(['layout' => $layout]);
+            $options['open']   = 'first';
+            $html             .= sprintf(
+                '<div class="crnd-preview__layout" data-crnd-preview-layout="%s"%s>%s</div>',
+                esc_attr($layout),
+                $layout === $current ? '' : ' hidden',
+                $this->renderer->renderTree($tree, $options)
+            );
+        }
+        return $html;
     }
 }

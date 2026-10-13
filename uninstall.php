@@ -3,7 +3,7 @@
  * Runs when the plugin is deleted from the WordPress admin.
  *
  * Always removes the settings, caches, capabilities and the "Document manager" role.
- * Documents and categories are removed only if "Delete all documents and categories"
+ * Documents, categories and their view/download history are removed only if "Delete all documents and categories"
  * was turned on in the settings; the files themselves stay in the media library.
  */
 
@@ -12,6 +12,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 require_once __DIR__ . '/src/Capabilities.php';
+require_once __DIR__ . '/src/Analytics/EventsTable.php';
 
 global $wpdb;
 
@@ -43,9 +44,13 @@ if (is_array($crnd_settings) && !empty($crnd_settings['delete_data'])) {
         }
     }
     // phpcs:enable
+
+    // The view and download history goes with the documents.
+    \CRNube\Docs\Analytics\EventsTable::uninstall();
 }
 
 \CRNube\Docs\Capabilities::uninstall();
+wp_clear_scheduled_hook('crnd_purge_events');
 
 delete_option('crnd_settings');
 delete_option('crnd_version');

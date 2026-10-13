@@ -27,8 +27,19 @@ Para mostrar los documentos en el sitio, pegue el shortcode en una página o en 
 [crnube_docs category="estados-financieros" open="first" header_style="solid" primary="#7a1fa2"]
 ```
 
+**Distribuciones** (`layout`):
+
+| Valor | Cómo se ve | Ideal para |
+|---|---|---|
+| `tree` | Grupos que se contraen, de cualquier profundidad | Muchas categorías y niveles |
+| `sections` | Títulos grandes por categoría; subcategorías como tarjetas que se abren | Páginas de "Gobierno corporativo" o "Transparencia" |
+| `grid` | Una tarjeta por documento, bajo un título por categoría (`columns` = 2, 3 o 4) | Pocas categorías, documentos destacados |
+| `list` | Una sola lista con filtros de categoría, año y búsqueda | Muchos documentos de pocas categorías |
+
 | Atributo | Valores | Por defecto |
 |---|---|---|
+| `layout` | `tree`, `sections`, `grid`, `list` | Ajustes |
+| `columns` | `1` a `4` (solo `grid`) | Ajustes (3) |
 | `category` | slugs o IDs separados por coma. Con una sola, sus documentos van arriba y sus subcategorías como grupos | todas las de primer nivel |
 | `title` | texto | — |
 | `search`, `year_filter`, `counts`, `date`, `size`, `type`, `toggle_all`, `group_by_year` | `yes` / `no` | Ajustes |
@@ -40,15 +51,33 @@ Para mostrar los documentos en el sitio, pegue el shortcode en una página o en 
 | `primary`, `accent` | color hex | Ajustes |
 | `class` | clases CSS extra | — |
 
-**Documentos › Ajustes** tiene colores, tipografía, redondeo, estilo de encabezados, opciones de visualización y textos, con vista previa en vivo.
+**Documentos › Ajustes** tiene la distribución por defecto, colores, tipografía, redondeo, estilo de encabezados, opciones de visualización y textos, con vista previa en vivo de las cuatro distribuciones.
+
+**Presets de marca**: ocho diseños listos (Azul institucional, Verde cooperativo, Vino, Morado, Turquesa, Naranja cálido, Grafito sobrio, Alto contraste), todos con contraste AA. **Exportar diseño** descarga un `.json` con colores, tipografía, distribución, etc.; **Importar diseño** lo carga en otro sitio. Nada se aplica hasta guardar, y el servidor valida cada valor. Un tema o plugin puede agregar presets con el filtro `crnd_presets`.
+
+## Reportes
+
+**Documentos › Reportes** muestra, para el periodo elegido (7, 30 o 90 días, este año, 12 meses o un rango propio) y opcionalmente para una categoría o un documento:
+
+- Descargas, vistas, visitantes únicos y documentos con actividad, comparados con el periodo anterior.
+- Gráfico de actividad en el tiempo (por día, o por mes en periodos largos), con los datos también en tabla.
+- Documentos más consultados, actividad por categoría, dispositivos, navegadores, sistemas, países y hora del día.
+- Registro de cada vista o descarga: fecha y hora, documento, dispositivo, navegador, sistema, país, página de origen y usuario (si inició sesión).
+- Exportación CSV para Excel: **detalle** (una fila por evento) o **resumen por documento**.
+
+Desde la Biblioteca, el menú de cada documento tiene **Ver estadísticas**.
+
+**Qué cuenta**: *Vista* es abrir el documento en el navegador (botón Ver o el título); *Descarga* es el botón Descargar. No se cuentan bots, precargas del navegador ni clics repetidos de la misma persona en 30 segundos.
+
+**Privacidad (Ley 8968)**: no se guarda la IP ni el navegador completo. Cada visitante recibe una clave anónima que cambia cada día. Quien envía "No rastrear" / *Global Privacy Control* se cuenta sin dispositivo ni país. El historial se borra solo después del plazo elegido en Ajustes (24 meses por defecto). El país solo se registra si el servidor lo informa (por ejemplo, detrás de Cloudflare); para servidores con proxy propio existe el filtro `crnd_visitor_ip`, y `crnd_visitor_country` para otra fuente de país.
 
 ## Permisos
 
-| Rol | Documentos y categorías | Ajustes |
-|---|---|---|
-| Administrador | ✔ | ✔ |
-| Editor | ✔ | — |
-| **Gestor de documentos** (rol nuevo) | ✔ (solo esto y subir archivos) | — |
+| Rol | Documentos y categorías | Reportes | Ajustes |
+|---|---|---|---|
+| Administrador | ✔ | ✔ | ✔ |
+| Editor | ✔ | ✔ | — |
+| **Gestor de documentos** (rol nuevo) | ✔ (solo esto y subir archivos) | ✔ | — |
 
 ## Descargas
 
@@ -56,9 +85,9 @@ Los enlaces apuntan a `/doc-download/{id}/view|download/`, nunca al archivo dire
 
 ## Personalización para desarrolladores
 
-- **Plantillas**: copie `templates/tree.php` o `templates/parts/*.php` a `{tema}/crnube-docs/`.
+- **Plantillas**: copie `templates/{tree,sections,grid,list}.php` o `templates/parts/*.php` a `{tema}/crnube-docs/`.
 - **CSS**: todas las reglas usan variables (`--crnd-primary`, `--crnd-radius`, …) sobre `.crnd`.
-- **Filtros**: `crnd_access_policy`, `crnd_allowed_mimes`, `crnd_download_base`, `crnd_sendfile_header`, `crnd_template_path`, `crnd_tree_limit`. **Acciones**: `crnd_loaded`, `crnd_before_download`.
+- **Filtros**: `crnd_presets`, `crnd_access_policy`, `crnd_allowed_mimes`, `crnd_download_base`, `crnd_sendfile_header`, `crnd_template_path`, `crnd_tree_limit`. **Acciones**: `crnd_loaded`, `crnd_before_download`.
 
 ## Desarrollo
 

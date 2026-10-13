@@ -15,6 +15,7 @@ final class DocumentPostType
     public const META_FILE_ID   = '_crnd_file_id';
     public const META_EXTERNAL  = '_crnd_external_url';
     public const META_DOWNLOADS = '_crnd_downloads';
+    public const META_VIEWS     = '_crnd_views';
     /** The year the document is about (a 2025 report published in 2026). Empty: the publication year. */
     public const META_YEAR = '_crnd_year';
 

@@ -158,7 +158,7 @@ final class CategoriesController
         if ($request->has_param('parent')) {
             $parent = (int) $request['parent'];
             // A category cannot go inside itself or one of its own subcategories.
-            if ($parent === $id || in_array($parent, get_term_children($id, CategoryTaxonomy::NAME) ?: [], true)) {
+            if ($parent === $id || $this->isInBranch($parent, $id)) {
                 return new \WP_Error('crnd_bad_parent', __('A category cannot be moved inside itself.', 'crnube-docs'), ['status' => 400]);
             }
             if ($parent > 0 && !term_exists($parent, CategoryTaxonomy::NAME)) {
@@ -183,7 +183,7 @@ final class CategoriesController
         if (!$term instanceof \WP_Term) {
             return new \WP_Error('crnd_not_found', __('The category does not exist.', 'crnube-docs'), ['status' => 404]);
         }
-        if ($parent === $id || in_array($parent, get_term_children($id, CategoryTaxonomy::NAME) ?: [], true)) {
+        if ($parent === $id || $this->isInBranch($parent, $id)) {
             return new \WP_Error('crnd_bad_parent', __('A category cannot be moved inside itself.', 'crnube-docs'), ['status' => 400]);
         }
         if ($parent > 0 && !term_exists($parent, CategoryTaxonomy::NAME)) {
@@ -267,6 +267,13 @@ final class CategoriesController
             return $result;
         }
         return $this->index();
+    }
+
+    /** Whether $termId is one of the subcategories (at any depth) of $ancestorId. */
+    private function isInBranch(int $termId, int $ancestorId): bool
+    {
+        $children = get_term_children($ancestorId, CategoryTaxonomy::NAME);
+        return is_array($children) && in_array($termId, array_map('intval', $children), true);
     }
 
     private function nextOrder(int $parent): int

@@ -300,14 +300,14 @@ export default function DocumentList( {
 						</th>
 						<th
 							className="crnd-col-downloads"
-							title={ __( 'Downloads', 'crnube-docs' ) }
+							title={ __( 'Downloads and views', 'crnube-docs' ) }
 						>
 							<span
-								className="dashicons dashicons-download"
+								className="dashicons dashicons-chart-bar"
 								aria-hidden="true"
 							/>
 							<span className="screen-reader-text">
-								{ __( 'Downloads', 'crnube-docs' ) }
+								{ __( 'Downloads and views', 'crnube-docs' ) }
 							</span>
 						</th>
 						<th className="crnd-col-actions">

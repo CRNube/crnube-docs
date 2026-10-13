@@ -34,21 +34,27 @@ function initLibrary(root) {
 
     const search = root.querySelector('[data-crnd-search]');
     const year = root.querySelector('[data-crnd-year]');
+    const category = root.querySelector('[data-crnd-category]');
     const status = root.querySelector('[data-crnd-status]');
     const noResults = root.querySelector('[data-crnd-no-results]');
     const groups = [...root.querySelectorAll('[data-crnd-group]')];
+    // Only <details> groups open and close; section headings (Sections, Grid) do not.
+    const foldable = groups.filter((g) => g.tagName === 'DETAILS');
+    const ownPart = (group, selector) =>
+        group.querySelector(`:scope > summary ${selector}, :scope > header ${selector}`);
     const docs = [...root.querySelectorAll('[data-crnd-doc]')].map((el) => ({
         el,
         id: el.dataset.id,
         text: normalize(el.dataset.search),
         year: el.dataset.year,
+        cats: (el.dataset.cats || '').split(' ').filter(Boolean),
         // The group titles above the document, so searching "riesgos" finds every
         // document inside "Informes de riesgos".
         path: (() => {
             const titles = [];
             let group = el.closest('[data-crnd-group]');
             while (group) {
-                titles.push(normalize(group.querySelector(':scope > summary [data-crnd-group-title]')?.textContent));
+                titles.push(normalize(ownPart(group, '[data-crnd-group-title]')?.textContent));
                 group = group.parentElement?.closest('[data-crnd-group]');
             }
             return titles.join(' ');
@@ -70,14 +76,16 @@ function initLibrary(root) {
     const apply = () => {
         const words = normalize(search?.value).split(/\s+/).filter(Boolean);
         const selectedYear = year?.value || '';
-        const filtering = words.length > 0 || selectedYear !== '';
+        const selectedCategory = category?.value || '';
+        const filtering = words.length > 0 || selectedYear !== '' || selectedCategory !== '';
         const shownIds = new Set();
 
         for (const doc of docs) {
             const haystack = doc.text + ' ' + doc.path;
             const matches =
                 words.every((word) => haystack.includes(word)) &&
-                (selectedYear === '' || doc.year === selectedYear);
+                (selectedYear === '' || doc.year === selectedYear) &&
+                (selectedCategory === '' || doc.cats.includes(selectedCategory));
             doc.el.hidden = !matches;
             if (matches) {
                 shownIds.add(doc.id);
@@ -91,21 +99,23 @@ function initLibrary(root) {
                 [...group.querySelectorAll('[data-crnd-doc]:not([hidden])')].map((el) => el.dataset.id)
             );
             group.hidden = visible.size === 0;
-            const badge = group.querySelector(':scope > summary [data-crnd-count]');
+            const badge = ownPart(group, '[data-crnd-count]');
             if (badge) {
-                badge.textContent = filtering ? String(visible.size) : badge.dataset.total;
+                const count = filtering ? visible.size : Number(badge.dataset.total);
+                const template = count === 1 ? badge.dataset.templateOne : badge.dataset.template;
+                badge.textContent = template ? template.replace('%s', String(count)) : String(count);
             }
         }
 
         if (filtering) {
-            openBeforeFilter ??= new Map(groups.map((g) => [g, g.open]));
-            groups.forEach((g) => {
+            openBeforeFilter ??= new Map(foldable.map((g) => [g, g.open]));
+            foldable.forEach((g) => {
                 if (!g.hidden) {
                     g.open = true;
                 }
             });
         } else if (openBeforeFilter) {
-            groups.forEach((g) => {
+            foldable.forEach((g) => {
                 g.open = openBeforeFilter.get(g) ?? false;
             });
             openBeforeFilter = null;
@@ -125,11 +135,12 @@ function initLibrary(root) {
         }
     });
     year?.addEventListener('change', apply);
+    category?.addEventListener('change', apply);
 
     root.querySelectorAll('[data-crnd-toggle]').forEach((button) => {
         button.addEventListener('click', () => {
             const open = button.dataset.crndToggle === 'open';
-            groups.forEach((g) => {
+            foldable.forEach((g) => {
                 if (!g.hidden) {
                     g.open = open;
                 }

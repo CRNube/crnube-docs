@@ -5,10 +5,14 @@ namespace CRNube\Docs;
 
 use CRNube\Docs\Access\AccessPolicy;
 use CRNube\Docs\Access\PublicAccessPolicy;
+use CRNube\Docs\Analytics\Retention;
+use CRNube\Docs\Analytics\Tracker;
 use CRNube\Docs\Admin\CategoryFields;
 use CRNube\Docs\Admin\DocumentListTable;
 use CRNube\Docs\Admin\DocumentMetaBox;
 use CRNube\Docs\Admin\LibraryPage;
+use CRNube\Docs\Admin\ReportsExport;
+use CRNube\Docs\Admin\ReportsPage;
 use CRNube\Docs\Admin\SettingsPage;
 use CRNube\Docs\Domain\CategoryTaxonomy;
 use CRNube\Docs\Domain\DocumentPostType;
@@ -20,6 +24,7 @@ use CRNube\Docs\Frontend\Renderer;
 use CRNube\Docs\Frontend\Shortcode;
 use CRNube\Docs\Rest\CategoriesController;
 use CRNube\Docs\Rest\DocumentsController;
+use CRNube\Docs\Rest\StatsController;
 use CRNube\Docs\Settings\Settings;
 use CRNube\Docs\Support\Cache;
 
@@ -77,14 +82,18 @@ final class Plugin
         (new CategoryTaxonomy())->register();
         (new YearTaxonomy())->register();
         (new Cache())->register();
-        (new DownloadController($this->access))->register();
+        (new DownloadController($this->access, new Tracker($this->settings)))->register();
+        (new Retention($this->settings))->register();
         (new Assets($this->settings))->register();
         (new Shortcode($this->renderer))->register();
         (new DocumentsController())->register();
         (new CategoriesController())->register();
+        (new StatsController())->register();
 
         if (is_admin()) {
             (new LibraryPage())->register();
+            (new ReportsPage())->register();
+            (new ReportsExport())->register();
             (new DocumentMetaBox())->register();
             (new DocumentListTable())->register();
             (new CategoryFields())->register();

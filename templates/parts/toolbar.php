@@ -33,6 +33,20 @@ $crnd_years = $view->option('year_filter') && count($crnd_tree->years) > 1;
                 </select>
             </label>
         <?php endif; ?>
+
+        <?php if ($view->showCategoryFilter()) : ?>
+            <label class="crnd-select crnd-select--wide">
+                <span class="crnd-sr-only"><?php esc_html_e('Filter by category', 'crnube-docs'); ?></span>
+                <select data-crnd-category>
+                    <option value=""><?php esc_html_e('All categories', 'crnube-docs'); ?></option>
+                    <?php foreach ($view->categoryOptions() as $crnd_category) : ?>
+                        <option value="<?php echo (int) $crnd_category['id']; ?>">
+                            <?php echo esc_html(str_repeat('— ', $crnd_category['depth']) . $crnd_category['name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+        <?php endif; ?>
     </div>
 
     <div class="crnd-toolbar__meta">
@@ -42,7 +56,7 @@ $crnd_years = $view->option('year_filter') && count($crnd_tree->years) > 1;
             echo esc_attr(__('Showing %1$s of %2$s documents', 'crnube-docs'));
             ?>"></span>
 
-        <?php if ($view->option('toggle_all') && $crnd_tree->groups !== []) : ?>
+        <?php if ($view->showToggleAll()) : ?>
             <button type="button" class="crnd-btn crnd-btn--ghost crnd-btn--icon" data-crnd-toggle="open"
                 title="<?php esc_attr_e('Expand all', 'crnube-docs'); ?>">
                 <?php echo $view->iconHtml('expand'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG markup ?>

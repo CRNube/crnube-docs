@@ -11,6 +11,7 @@ final class Capabilities
 {
     public const MANAGE_CATEGORIES = 'manage_crnd_categories';
     public const MANAGE_SETTINGS   = 'manage_crnd_settings';
+    public const VIEW_REPORTS      = 'view_crnd_reports';
     public const MANAGER_ROLE      = 'crnd_manager';
 
     /** Primitive capabilities the document post type maps its meta capabilities to. */
@@ -31,8 +32,8 @@ final class Capabilities
     public static function forRole(string $role): array
     {
         return match ($role) {
-            'administrator' => [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::MANAGE_SETTINGS],
-            'editor', self::MANAGER_ROLE => [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES],
+            'administrator' => [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::MANAGE_SETTINGS, self::VIEW_REPORTS],
+            'editor', self::MANAGER_ROLE => [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::VIEW_REPORTS],
             default => [],
         };
     }
@@ -59,7 +60,7 @@ final class Capabilities
 
     public static function uninstall(): void
     {
-        $all = [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::MANAGE_SETTINGS];
+        $all = [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::MANAGE_SETTINGS, self::VIEW_REPORTS];
         foreach (wp_roles()->role_objects as $role) {
             foreach ($all as $cap) {
                 $role->remove_cap($cap);

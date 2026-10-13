@@ -17,6 +17,7 @@ $locales = ['es_CR', 'es_ES', 'es_MX', 'es_CO', 'es_AR', 'es_CL', 'es_PE', 'es_V
 /** Built script (relative path, as WordPress hashes it) => folder with its sources. */
 $scripts = [
     'build/library.js' => 'assets/src/library',
+    'build/reports.js' => 'assets/src/reports',
 ];
 
 $data     = require $source;

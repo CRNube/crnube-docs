@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace CRNube\Docs\Download;
 
 use CRNube\Docs\Access\AccessPolicy;
+use CRNube\Docs\Analytics\Tracker;
 use CRNube\Docs\Domain\Document;
 use CRNube\Docs\Domain\DocumentPostType;
 use CRNube\Docs\Domain\FileTypes;
@@ -18,8 +19,10 @@ final class DownloadController
     public const QUERY_ID   = 'crnd_doc';
     public const QUERY_MODE = 'crnd_mode';
 
-    public function __construct(private readonly AccessPolicy $access)
-    {
+    public function __construct(
+        private readonly AccessPolicy $access,
+        private readonly Tracker $tracker,
+    ) {
     }
 
     public function register(): void
@@ -98,7 +101,8 @@ final class DownloadController
         }
 
         if (sanitize_key(wp_unslash($_SERVER['REQUEST_METHOD'] ?? 'get')) !== 'head') {
-            $this->countDownload($document->id);
+            // A "view" of a file the browser cannot show is served as a download.
+            $this->tracker->record($document, $mode === 'view' && $document->isViewable() ? 'view' : 'download', $user);
         }
 
         do_action('crnd_before_download', $document, $mode, $user);
@@ -167,22 +171,6 @@ final class DownloadController
             fclose($handle); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
         }
         exit;
-    }
-
-    private function countDownload(int $documentId): void
-    {
-        global $wpdb;
-
-        if (add_post_meta($documentId, DocumentPostType::META_DOWNLOADS, 1, true)) {
-            return;
-        }
-        // Atomic, so two downloads at the same time are both counted.
-        $wpdb->query($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-            "UPDATE {$wpdb->postmeta} SET meta_value = meta_value + 1 WHERE post_id = %d AND meta_key = %s",
-            $documentId,
-            DocumentPostType::META_DOWNLOADS
-        ));
-        wp_cache_delete($documentId, 'post_meta');
     }
 
     private function fail(int $status, string $message): never

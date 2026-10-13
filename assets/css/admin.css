@@ -668,3 +668,92 @@
     color: #50575e;
     border-top: 1px solid #f0f0f1;
 }
+
+/* ---------- Import from FIVO Docs ---------- */
+
+.crnd-migrate__intro {
+    max-width: 820px;
+    font-size: 14px;
+}
+
+.crnd-migrate__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 1100px;
+}
+
+.crnd-migrate__step h2 {
+    margin-top: 0;
+}
+
+.crnd-migrate__option {
+    display: block;
+    margin: 8px 0;
+}
+
+.crnd-migrate__option span {
+    display: block;
+    margin-left: 24px;
+    color: #646970;
+}
+
+.crnd-migrate__tree {
+    max-height: 340px;
+    overflow: auto;
+    margin: 12px 0 0;
+    padding: 8px 12px;
+    background: #f6f7f7;
+    border-radius: 6px;
+}
+
+.crnd-migrate__tree li {
+    margin: 4px 0;
+}
+
+.crnd-migrate__tree li.is-skipped {
+    color: #8c8f94;
+}
+
+.crnd-migrate__count {
+    padding: 0 6px;
+    font-size: 11px;
+    background: #fff;
+    border-radius: 999px;
+}
+
+.crnd-migrate__tag {
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 11px;
+    color: #00703c;
+    background: #e6f5ec;
+    border-radius: 999px;
+}
+
+.crnd-migrate__step progress {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+    margin-top: 12px;
+}
+
+.crnd-migrate__swap {
+    margin: 4px 0;
+}
+
+.crnd-migrate__swap code {
+    word-break: break-all;
+}
+
+.crnd-migrate__pages td {
+    vertical-align: top;
+}
+
+.crnd-migrate__pages .button {
+    margin: 0 4px 4px 0;
+}
+
+.crnd-muted {
+    color: #646970;
+}

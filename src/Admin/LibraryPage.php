@@ -62,6 +62,8 @@ final class LibraryPage
             'post-new.php?post_type=' . DocumentPostType::NAME => 2,
             $this->categoriesSlug()                         => 3,
             ReportsPage::SLUG                               => 4,
+            AccessPage::SLUG                                => 5,
+            MigrationPage::SLUG                             => 8,
             SettingsPage::SLUG                              => 9,
         ];
         usort($submenu[self::SLUG], static fn (array $a, array $b): int => ($weight[$a[2]] ?? 5) <=> ($weight[$b[2]] ?? 5));

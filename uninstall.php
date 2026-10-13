@@ -13,6 +13,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 
 require_once __DIR__ . '/src/Capabilities.php';
 require_once __DIR__ . '/src/Analytics/EventsTable.php';
+require_once __DIR__ . '/src/Access/GroupsTable.php';
 
 global $wpdb;
 
@@ -47,6 +48,12 @@ if (is_array($crnd_settings) && !empty($crnd_settings['delete_data'])) {
 
     // The view and download history goes with the documents.
     \CRNube\Docs\Analytics\EventsTable::uninstall();
+
+    // The access groups go too. Member accounts stay (they are people's WordPress users),
+    // but lose the member role. Private files stay in their folder for the admin to review.
+    \CRNube\Docs\Access\GroupsTable::uninstall();
+    remove_role('crnd_member');
+    delete_option('crnd_private_folder');
 }
 
 \CRNube\Docs\Capabilities::uninstall();

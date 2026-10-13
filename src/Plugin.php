@@ -10,6 +10,10 @@ use CRNube\Docs\Access\Portal;
 use CRNube\Docs\Access\PrivateStorage;
 use CRNube\Docs\Admin\AccessPage;
 use CRNube\Docs\Rest\AccessController;
+use CRNube\Docs\Rest\MigrationController;
+use CRNube\Docs\Integrations\Elementor\Integration as ElementorIntegration;
+use CRNube\Docs\Frontend\Block;
+use CRNube\Docs\Admin\MigrationPage;
 use CRNube\Docs\Analytics\Retention;
 use CRNube\Docs\Analytics\Tracker;
 use CRNube\Docs\Admin\CategoryFields;
@@ -100,12 +104,22 @@ final class Plugin
         (new CategoriesController())->register();
         (new StatsController())->register();
         (new AccessController())->register();
+        (new MigrationController())->register();
         (new PrivateStorage())->register();
         $this->portal->register();
+
+        // Elementor loads after this plugin; its widgets hook in once it is ready.
+        if (did_action('elementor/loaded')) {
+            (new ElementorIntegration())->register();
+        } else {
+            add_action('elementor/loaded', static fn () => (new ElementorIntegration())->register());
+        }
+        (new Block($this->renderer))->register();
 
         if (is_admin()) {
             (new LibraryPage())->register();
             (new AccessPage())->register();
+            (new MigrationPage())->register();
             (new ReportsPage())->register();
             (new ReportsExport())->register();
             (new DocumentMetaBox())->register();

@@ -19,7 +19,11 @@ Gestor de documentos para WordPress: categorías de varios niveles que se contra
 
 También existen las pantallas clásicas (**Todos los documentos**, **Agregar documento**, **Categorías**) para editar todos los detalles.
 
-Para mostrar los documentos en el sitio, pegue el shortcode en una página o en un widget *Shortcode* de Elementor.
+Para mostrar los documentos en el sitio hay tres caminos, todos con las mismas opciones:
+
+- **Elementor**: categoría *CRNube Docs* del panel, widgets **Biblioteca de documentos** y **Portal de asociados**. Las opciones que quedan en *Como en los ajustes* usan los de **Documentos › Ajustes**.
+- **Editor de bloques**: bloque **Biblioteca de documentos** (vista previa real en el editor).
+- **Shortcode** en cualquier página, widget o constructor:
 
 ```
 [crnube_docs]
@@ -55,6 +59,28 @@ Para mostrar los documentos en el sitio, pegue el shortcode en una página o en 
 
 **Presets de marca**: ocho diseños listos (Azul institucional, Verde cooperativo, Vino, Morado, Turquesa, Naranja cálido, Grafito sobrio, Alto contraste), todos con contraste AA. **Exportar diseño** descarga un `.json` con colores, tipografía, distribución, etc.; **Importar diseño** lo carga en otro sitio. Nada se aplica hasta guardar, y el servidor valida cada valor. Un tema o plugin puede agregar presets con el filtro `crnd_presets`.
 
+## Migrar desde FIVO Docs
+
+**Documentos › Importar** (requiere permiso de ajustes):
+
+1. **Qué se importará**: muestra las categorías de FIVO como quedarán. *Omitir subcategorías genéricas* une niveles como "Ver Aquí" o "Documentos" a su categoría superior; *Limpiar títulos* convierte `Informe-Anual_2024` en *Informe Anual 2024*.
+2. **Importar**: crea las categorías y un documento por archivo, en lotes de 50. Los archivos **no se copian ni se modifican**: cada documento usa el mismo adjunto, así que las páginas actuales siguen funcionando. Se puede repetir sin duplicar (solo actualiza categorías).
+3. **Reemplazar shortcodes**: lista las páginas con `[fivo…]` (contenido clásico y Elementor). *Reemplazar* guarda una copia de seguridad y cambia cada shortcode por `[crnube_docs]` con las categorías equivalentes; las selecciones a mano de archivos se convierten en una categoría *Selección: {página}* bajo *Selecciones FIVO*, con el mismo orden. *Deshacer* restaura la página.
+
+Cuando todas las páginas estén revisadas se puede desactivar FIVO Docs; los archivos quedan en la biblioteca de medios.
+
+## Área protegida
+
+1. **Documentos › Acceso**: cree grupos (*Junta Directiva*, *Delegados 2026*…) y agregue personas por correo, con fecha de vencimiento opcional, o **importe un CSV** (columnas nombre, correo, vence; `;` o `,`; fechas AAAA-MM-DD o DD/MM/AAAA). Puede avisarles por correo con el enlace al portal. Quien no tiene cuenta recibe una con el rol **Miembro de documentos** (sin acceso al admin).
+2. **Biblioteca**: en el menú de una categoría, **Quién puede abrirla…** → *Solo miembros* de uno o varios grupos (ninguno marcado = cualquier miembro). Aplica a sus subcategorías. Cada documento puede tener su propia excepción en la columna **Acceso** (o en la caja "Quién puede abrirlo" de la edición clásica).
+3. **Ajustes › Área protegida**: **Crear la página del portal** (`[crnube_docs_portal]`), mostrar los privados con candado u ocultarlos, y duración de la sesión.
+
+- **Ingreso sin contraseña**: el miembro escribe su correo y recibe un código de 6 dígitos (10 minutos, un solo uso, 5 intentos). No se revela si un correo tiene acceso. Al vencer la membresía pierde el acceso solo.
+- **Archivos privados**: se mueven a `uploads/crnd-private-{aleatorio}/` (con `.htaccess`/`web.config` que niegan todo); su URL directa deja de funcionar y solo se entregan tras verificar permisos, sin caché. La pantalla Acceso comprueba por HTTP que el servidor realmente los bloquea; en **Nginx** agregue `location ~* /wp-content/uploads/crnd-private- { deny all; }`.
+- Un documento en varias categorías es privado si alguna lo es. Si se borra un grupo, sus documentos quedan solo para el personal (nunca se abren a todos por error).
+- Cada vista/descarga privada queda en **Reportes** con el nombre del usuario.
+- `[crnube_docs_portal category="actas"]` muestra en el portal solo esa categoría.
+
 ## Reportes
 
 **Documentos › Reportes** muestra, para el periodo elegido (7, 30 o 90 días, este año, 12 meses o un rango propio) y opcionalmente para una categoría o un documento:
@@ -73,11 +99,12 @@ Desde la Biblioteca, el menú de cada documento tiene **Ver estadísticas**.
 
 ## Permisos
 
-| Rol | Documentos y categorías | Reportes | Ajustes |
-|---|---|---|---|
-| Administrador | ✔ | ✔ | ✔ |
-| Editor | ✔ | ✔ | — |
-| **Gestor de documentos** (rol nuevo) | ✔ (solo esto y subir archivos) | ✔ | — |
+| Rol | Documentos y categorías | Reportes | Acceso (grupos) | Ajustes |
+|---|---|---|---|---|
+| Administrador | ✔ | ✔ | ✔ | ✔ |
+| Editor | ✔ | ✔ | ✔ | — |
+| **Gestor de documentos** | ✔ (solo esto y subir archivos) | ✔ | ✔ | — |
+| **Miembro de documentos** | — (solo abre documentos de sus grupos, desde el portal) | — | — | — |
 
 ## Descargas
 

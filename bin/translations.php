@@ -19,6 +19,8 @@ $scripts = [
     'build/library.js' => 'assets/src/library',
     'build/reports.js' => 'assets/src/reports',
     'build/access.js'  => 'assets/src/access',
+    'build/block.js'   => 'assets/src/block',
+    'assets/js/admin-migrate.js' => 'assets/js',
 ];
 
 $data     = require $source;

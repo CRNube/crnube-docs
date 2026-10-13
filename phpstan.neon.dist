@@ -1,0 +1,10 @@
+parameters:
+    level: 6
+    paths:
+        - crnube-docs.php
+        - src
+        - templates
+        - uninstall.php
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    treatPhpDocTypesAsCertain: false

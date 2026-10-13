@@ -15,6 +15,7 @@ final class Settings
 
     public const HEADER_STYLES = ['soft', 'solid', 'minimal'];
     public const LAYOUTS       = ['tree', 'sections', 'grid', 'list'];
+    public const PRIVATE_DISPLAY = ['lock', 'hide'];
 
     /** The settings a brand preset (and an exported design file) is made of. */
     public const DESIGN_KEYS = [
@@ -86,6 +87,10 @@ final class Settings
             'label_view'     => '',
             'label_search'   => '',
             'label_empty'    => '',
+            // Protected area
+            'portal_page'      => 0,
+            'private_display'  => 'lock',
+            'session_hours'    => 8,
             // Statistics
             'track_enabled'    => true,
             'respect_gpc'      => true,
@@ -143,6 +148,9 @@ final class Settings
                 is_bool($default) => !empty($value),
                 $key === 'radius' => max(0, min(32, (int) ($value ?? $default))),
                 $key === 'retention_months' => max(0, min(120, (int) ($value ?? $default))),
+                $key === 'session_hours'    => max(1, min(720, (int) ($value ?? $default))),
+                $key === 'portal_page'      => get_post_type(absint($value)) === 'page' ? absint($value) : 0,
+                $key === 'private_display'  => self::oneOf($value, self::PRIVATE_DISPLAY, $default),
                 in_array($key, ['primary', 'accent', 'text', 'muted', 'surface', 'surface_alt', 'border'], true)
                     => sanitize_hex_color((string) $value) ?: $default,
                 $key === 'density'      => self::oneOf($value, self::DENSITIES, $default),

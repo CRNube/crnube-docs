@@ -125,6 +125,12 @@ final class LibraryPage
             'shortcodeTag'     => Shortcode::TAG,
             'currentYear'      => (int) wp_date('Y'),
             'reportsUrl'       => current_user_can(Capabilities::VIEW_REPORTS) ? ReportsPage::url() : '',
+            'canManageAccess'  => current_user_can(Capabilities::MANAGE_ACCESS),
+            'accessUrl'        => current_user_can(Capabilities::MANAGE_ACCESS) ? admin_url('admin.php?page=' . AccessPage::SLUG) : '',
+            'groups'           => array_map(
+                static fn (array $g): array => ['id' => $g['id'], 'name' => $g['name']],
+                \CRNube\Docs\Access\Groups::all()
+            ),
         ]) . ';', 'before');
     }
 

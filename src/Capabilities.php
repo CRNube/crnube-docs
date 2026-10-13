@@ -12,7 +12,10 @@ final class Capabilities
     public const MANAGE_CATEGORIES = 'manage_crnd_categories';
     public const MANAGE_SETTINGS   = 'manage_crnd_settings';
     public const VIEW_REPORTS      = 'view_crnd_reports';
+    public const MANAGE_ACCESS     = 'manage_crnd_access';
     public const MANAGER_ROLE      = 'crnd_manager';
+    /** Members of the protected area: they can sign in and open documents, nothing else. */
+    public const MEMBER_ROLE       = 'crnd_member';
 
     /** Primitive capabilities the document post type maps its meta capabilities to. */
     public const DOCUMENT_CAPS = [
@@ -32,8 +35,8 @@ final class Capabilities
     public static function forRole(string $role): array
     {
         return match ($role) {
-            'administrator' => [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::MANAGE_SETTINGS, self::VIEW_REPORTS],
-            'editor', self::MANAGER_ROLE => [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::VIEW_REPORTS],
+            'administrator' => [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::MANAGE_SETTINGS, self::VIEW_REPORTS, self::MANAGE_ACCESS],
+            'editor', self::MANAGER_ROLE => [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::VIEW_REPORTS, self::MANAGE_ACCESS],
             default => [],
         };
     }
@@ -45,6 +48,9 @@ final class Capabilities
                 'read'         => true,
                 'upload_files' => true,
             ]);
+        }
+        if (!get_role(self::MEMBER_ROLE)) {
+            add_role(self::MEMBER_ROLE, __('Document member', 'crnube-docs'), ['read' => true]);
         }
 
         foreach (['administrator', 'editor', self::MANAGER_ROLE] as $roleName) {
@@ -60,7 +66,7 @@ final class Capabilities
 
     public static function uninstall(): void
     {
-        $all = [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::MANAGE_SETTINGS, self::VIEW_REPORTS];
+        $all = [...self::DOCUMENT_CAPS, self::MANAGE_CATEGORIES, self::MANAGE_SETTINGS, self::VIEW_REPORTS, self::MANAGE_ACCESS];
         foreach (wp_roles()->role_objects as $role) {
             foreach ($all as $cap) {
                 $role->remove_cap($cap);

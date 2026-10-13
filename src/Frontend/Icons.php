@@ -46,6 +46,7 @@ final class Icons
             'external' => '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
             'expand'   => '<path d="m7 15 5 5 5-5M7 9l5-5 5 5"/>',
             'collapse' => '<path d="m7 20 5-5 5 5M7 4l5 5 5-5"/>',
+            'lock'     => '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
         ];
         if (!isset($paths[$name])) {
             return '';

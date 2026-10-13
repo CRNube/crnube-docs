@@ -37,6 +37,7 @@ final class SettingsPage
         add_action('admin_enqueue_scripts', [$this, 'enqueue']);
         add_filter('option_page_capability_' . self::GROUP, static fn (): string => Capabilities::MANAGE_SETTINGS);
         add_filter('plugin_action_links_' . plugin_basename(CRND_FILE), [$this, 'actionLinks']);
+        add_action('admin_post_crnd_create_portal', [$this, 'createPortalPage']);
     }
 
     public function menu(): void
@@ -123,6 +124,7 @@ final class SettingsPage
                     <?php $this->designCard($v); ?>
                     <?php $this->displayCard($v); ?>
                     <?php $this->labelsCard($v); ?>
+                    <?php $this->protectedCard($v); ?>
                     <?php $this->statsCard($v); ?>
                     <?php $this->advancedCard($v); ?>
                     <div class="crnd-settings__submit">
@@ -383,6 +385,90 @@ final class SettingsPage
             </div>
         </section>
         <?php
+    }
+
+    /** @param array<string, mixed> $v */
+    private function protectedCard(array $v): void
+    {
+        $portal = (int) $v['portal_page'];
+        ?>
+        <section class="crnd-card" id="crnd-protected">
+            <header class="crnd-card__header">
+                <h2><?php esc_html_e('Protected area', 'crnube-docs'); ?></h2>
+                <span class="crnd-card__hint"><?php esc_html_e('Members sign in on the portal page with a code sent to their email. Groups and members are managed in Documents › Access.', 'crnube-docs'); ?></span>
+            </header>
+            <div class="crnd-field-row">
+                <label class="crnd-field">
+                    <span class="crnd-field__label"><?php esc_html_e('Portal page', 'crnube-docs'); ?></span>
+                    <?php
+                    wp_dropdown_pages([
+                        'name'              => esc_attr($this->name('portal_page')),
+                        'selected'          => $portal, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- int
+                        'show_option_none'  => esc_html__('— Use the WordPress login —', 'crnube-docs'),
+                        'option_none_value' => '0',
+                    ]);
+                    ?>
+                </label>
+                <label class="crnd-field">
+                    <span class="crnd-field__label"><?php esc_html_e('Restricted documents in public libraries', 'crnube-docs'); ?></span>
+                    <select name="<?php echo esc_attr($this->name('private_display')); ?>">
+                        <option value="lock" <?php selected($v['private_display'], 'lock'); ?>><?php esc_html_e('Show them with a lock and "Sign in"', 'crnube-docs'); ?></option>
+                        <option value="hide" <?php selected($v['private_display'], 'hide'); ?>><?php esc_html_e('Hide them from people without access', 'crnube-docs'); ?></option>
+                    </select>
+                </label>
+                <label class="crnd-field">
+                    <span class="crnd-field__label"><?php esc_html_e('Members stay signed in for', 'crnube-docs'); ?></span>
+                    <select name="<?php echo esc_attr($this->name('session_hours')); ?>">
+                        <?php foreach ([1, 2, 4, 8, 24, 72, 168] as $hours) : ?>
+                            <option value="<?php echo (int) $hours; ?>" <?php selected((int) $v['session_hours'], $hours); ?>>
+                                <?php
+                                /* translators: %d: number of hours */
+                                echo esc_html(sprintf(_n('%d hour', '%d hours', $hours, 'crnube-docs'), $hours));
+                                ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            </div>
+            <?php if ($portal === 0 || get_post_status($portal) !== 'publish') : ?>
+                <p>
+                    <a class="button" href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=crnd_create_portal'), 'crnd_create_portal')); ?>">
+                        <?php esc_html_e('Create the portal page', 'crnube-docs'); ?>
+                    </a>
+                    <span class="description"><?php esc_html_e('A page with [crnube_docs_portal], ready to link from the menu.', 'crnube-docs'); ?></span>
+                </p>
+            <?php else : ?>
+                <p class="description">
+                    <?php esc_html_e('Portal:', 'crnube-docs'); ?>
+                    <a href="<?php echo esc_url((string) get_permalink($portal)); ?>" target="_blank" rel="noopener"><?php echo esc_html((string) get_permalink($portal)); ?></a>
+                </p>
+            <?php endif; ?>
+        </section>
+        <?php
+    }
+
+    /** Creates a published "Private documents" page with the portal shortcode and selects it. */
+    public function createPortalPage(): void
+    {
+        if (!current_user_can(Capabilities::MANAGE_SETTINGS) || !current_user_can('publish_pages')) {
+            wp_die(esc_html__('You cannot create pages.', 'crnube-docs'), '', ['response' => 403]);
+        }
+        check_admin_referer('crnd_create_portal');
+
+        $page = wp_insert_post([
+            'post_type'    => 'page',
+            'post_status'  => 'publish',
+            'post_title'   => __('Private documents', 'crnube-docs'),
+            'post_name'    => 'documentos-privados',
+            'post_content' => '[' . \CRNube\Docs\Access\Portal::SHORTCODE . ']',
+        ], true);
+        if (!is_wp_error($page)) {
+            $values                = $this->settings->all();
+            $values['portal_page'] = (int) $page;
+            update_option(Settings::OPTION, Settings::sanitize($values));
+        }
+        wp_safe_redirect(admin_url('admin.php?page=' . self::SLUG . '#crnd-protected'));
+        exit;
     }
 
     /** @param array<string, mixed> $v */

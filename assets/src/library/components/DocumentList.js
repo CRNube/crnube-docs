@@ -137,7 +137,7 @@ export default function DocumentList( {
 
 	const allChecked =
 		items.length > 0 && items.every( ( item ) => checked.has( item.id ) );
-	const columns = reorderable ? 9 : 8;
+	const columns = reorderable ? 10 : 9;
 
 	const indicatorFor = ( id ) => {
 		if ( indicator?.id !== id ) {
@@ -282,6 +282,9 @@ export default function DocumentList( {
 						</th>
 						<th className="crnd-col-cats">
 							{ __( 'Categories', 'crnube-docs' ) }
+						</th>
+						<th className="crnd-col-access">
+							{ __( 'Access', 'crnube-docs' ) }
 						</th>
 						<th className="crnd-col-year">
 							{ __( 'Year', 'crnube-docs' ) }

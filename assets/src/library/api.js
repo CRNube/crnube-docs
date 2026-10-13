@@ -139,3 +139,11 @@ export const setCategoryOrder = ( id, data ) =>
 		method: 'POST',
 		data,
 	} );
+
+/** Makes a category public, private for `groups`, or inheriting (access ''). */
+export const setCategoryAccess = ( id, access, groups ) =>
+	apiFetch( {
+		path: `${ BASE }/categories/${ id }/access`,
+		method: 'POST',
+		data: { access, groups },
+	} );

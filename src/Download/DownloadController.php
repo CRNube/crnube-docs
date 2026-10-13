@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace CRNube\Docs\Download;
 
 use CRNube\Docs\Access\AccessPolicy;
+use CRNube\Docs\Access\PrivateStorage;
 use CRNube\Docs\Analytics\Tracker;
 use CRNube\Docs\Domain\Document;
 use CRNube\Docs\Domain\DocumentPostType;
@@ -113,7 +114,10 @@ final class DownloadController
             exit;
         }
 
-        if ($mode === 'view' && $document->isViewable()) {
+        $inline = $mode === 'view' && $document->isViewable();
+
+        // Public files are sent to their URL; restricted ones never leave this controller.
+        if ($inline && !$document->restricted && !PrivateStorage::isPrivateFile($document->fileId)) {
             $url = wp_get_attachment_url($document->fileId);
             if ($url) {
                 wp_redirect($url, 302, 'CRNube Docs'); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
@@ -121,10 +125,10 @@ final class DownloadController
             }
         }
 
-        $this->stream($document);
+        $this->stream($document, $inline);
     }
 
-    private function stream(Document $document): never
+    private function stream(Document $document, bool $inline = false): never
     {
         $path    = realpath((string) get_attached_file($document->fileId));
         $uploads = realpath(wp_get_upload_dir()['basedir']);
@@ -151,7 +155,11 @@ final class DownloadController
         status_header(200);
         header('Content-Type: ' . $mime);
         header('Content-Length: ' . (string) filesize($path));
-        header(sprintf('Content-Disposition: attachment; filename="%s"; filename*=UTF-8\'\'%s', $ascii, rawurlencode($filename)));
+        header(sprintf('Content-Disposition: %s; filename="%s"; filename*=UTF-8\'\'%s', $inline ? 'inline' : 'attachment', $ascii, rawurlencode($filename)));
+        if ($document->restricted) {
+            // Never kept by shared caches or proxies.
+            header('Cache-Control: private, no-store, max-age=0');
+        }
         header('X-Content-Type-Options: nosniff');
         header('X-Robots-Tag: noindex, nofollow');
 

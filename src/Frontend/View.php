@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace CRNube\Docs\Frontend;
 
+use CRNube\Docs\Access\AccessPolicy;
+use CRNube\Docs\Access\Portal;
 use CRNube\Docs\Domain\CategoryNode;
 use CRNube\Docs\Domain\Document;
 use CRNube\Docs\Domain\DocumentTree;
@@ -25,7 +27,34 @@ final class View
         private readonly array $options,
         private readonly Settings $settings,
         public readonly string $id,
+        private readonly ?AccessPolicy $access = null,
+        private readonly ?Portal $portal = null,
     ) {
+    }
+
+    /** Whether the current visitor may open the document. */
+    public function canAccess(Document $document): bool
+    {
+        if (!$document->restricted || $this->access === null) {
+            return true;
+        }
+        return $this->access->canAccess($document, is_user_logged_in() ? wp_get_current_user() : null);
+    }
+
+    /** Restricted and closed to this visitor: shown with a lock instead of the file buttons. */
+    public function isLocked(Document $document): bool
+    {
+        return !$this->canAccess($document);
+    }
+
+    /** Where a locked document sends the visitor: sign in, then back to the document. */
+    public function loginUrl(Document $document): string
+    {
+        if (is_user_logged_in()) {
+            return '';
+        }
+        $target = $this->viewUrl($document);
+        return $this->portal !== null ? $this->portal->loginUrl($target) : wp_login_url($target);
     }
 
     public function option(string $key): mixed
@@ -200,12 +229,12 @@ final class View
 
     public function showViewButton(Document $document): bool
     {
-        return $document->hasFile() && $document->isViewable();
+        return $document->hasFile() && $document->isViewable() && !$this->isLocked($document);
     }
 
     public function showDownloadButton(Document $document): bool
     {
-        return $document->hasFile() && !$document->isExternal();
+        return $document->hasFile() && !$document->isExternal() && !$this->isLocked($document);
     }
 
     public function date(Document $document): string

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace CRNube\Docs\Rest;
 
+use CRNube\Docs\Access\DocumentAccess;
+use CRNube\Docs\Capabilities;
 use CRNube\Docs\Domain\CategoryOrder;
 use CRNube\Docs\Domain\CategoryTaxonomy;
 use CRNube\Docs\Domain\Document;
@@ -95,6 +97,8 @@ final class DocumentsController
                     'year'       => ['type' => 'string', 'pattern' => '^(\d{4})?$'],
                     'categories' => ['type' => 'array', 'items' => ['type' => 'integer', 'minimum' => 1]],
                     'menu_order' => ['type' => 'integer'],
+                    'access'        => ['type' => 'string', 'enum' => DocumentAccess::MODES],
+                    'access_groups' => ['type' => 'array', 'items' => ['type' => 'integer', 'minimum' => 1], 'default' => []],
                 ],
             ],
             [
@@ -296,6 +300,13 @@ final class DocumentsController
             // Saved before wp_update_post(), whose save_post hook files the document under this year.
             update_post_meta($postId, DocumentPostType::META_YEAR, (string) $request['year']);
         }
+        if ($request->has_param('access')) {
+            if (!current_user_can(Capabilities::MANAGE_ACCESS)) {
+                return new \WP_Error('crnd_cannot_manage_access', __('You cannot change who may open documents.', 'crnube-docs'), ['status' => 403]);
+            }
+            // Before wp_update_post(): its save_post hook moves the file where the new access says.
+            DocumentAccess::saveForPost($postId, (string) $request['access'], (array) $request['access_groups']);
+        }
         if ($request->has_param('categories')) {
             $ids = $this->existingCategories((array) $request['categories']);
             wp_set_object_terms($postId, $ids, CategoryTaxonomy::NAME);
@@ -407,6 +418,11 @@ final class DocumentsController
             'edit_url'     => (string) get_edit_post_link($post->ID, 'raw'),
             'view_url'     => DownloadController::url($post->ID, 'view'),
             'can_delete'   => current_user_can('delete_post', $post->ID),
+            // Its own setting, and the result once categories are taken into account.
+            'access'        => DocumentAccess::modeOf($post->ID),
+            'access_groups' => DocumentAccess::groupsOf($post->ID),
+            'restricted'    => $document->restricted,
+            'groups'        => $document->groupIds,
         ];
     }
 

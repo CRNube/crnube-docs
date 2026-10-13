@@ -41,6 +41,7 @@ export default function CategoryTree( {
 	onMove,
 	onDelete,
 	onCopyShortcode,
+	onAccess,
 	onDropDocuments,
 	onDropFiles,
 	onMoveCategory,
@@ -257,6 +258,12 @@ export default function CategoryTree( {
 							aria-hidden="true"
 						/>
 						<span className="crnd-tree__name">{ node.name }</span>
+						{ node.restricted && (
+							<span
+								className="crnd-tree__lock dashicons dashicons-lock"
+								title={ __( 'Private', 'crnube-docs' ) }
+							/>
+						) }
 						<span className="crnd-tree__count">{ node.total }</span>
 					</button>
 					<DropdownMenu
@@ -286,6 +293,20 @@ export default function CategoryTree( {
 											'crnube-docs'
 										) }
 									</MenuItem>
+									{ onAccess && (
+										<MenuItem
+											icon="lock"
+											onClick={ () => {
+												onAccess( node );
+												onClose();
+											} }
+										>
+											{ __(
+												'Who can open it…',
+												'crnube-docs'
+											) }
+										</MenuItem>
+									) }
 								</MenuGroup>
 								{ canManage && (
 									<>

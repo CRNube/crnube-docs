@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace CRNube\Docs\Domain;
 
+use CRNube\Docs\Access\DocumentAccess;
+
 /**
  * A published document, read once from the database and then handed to the templates.
  * Plain values only, so it can be cached as is.
@@ -11,6 +13,7 @@ final class Document
 {
     /**
      * @param list<int> $categoryIds
+     * @param list<int> $groupIds    Groups allowed when restricted; empty means any member.
      */
     public function __construct(
         public readonly int $id,
@@ -23,6 +26,8 @@ final class Document
         public readonly string $extension,
         public readonly ?int $size,
         public readonly array $categoryIds,
+        public readonly bool $restricted = false,
+        public readonly array $groupIds = [],
     ) {
     }
 
@@ -46,7 +51,9 @@ final class Document
             $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         }
 
-        $terms = get_the_terms($post, CategoryTaxonomy::NAME);
+        $terms       = get_the_terms($post, CategoryTaxonomy::NAME);
+        $categoryIds = is_array($terms) ? array_map(static fn (\WP_Term $t): int => $t->term_id, $terms) : [];
+        $access      = DocumentAccess::resolve($post->ID, $categoryIds);
 
         return new self(
             id: $post->ID,
@@ -58,7 +65,9 @@ final class Document
             externalUrl: $external,
             extension: $extension,
             size: $size,
-            categoryIds: is_array($terms) ? array_map(static fn (\WP_Term $t): int => $t->term_id, $terms) : [],
+            categoryIds: $categoryIds,
+            restricted: $access['restricted'],
+            groupIds: $access['groups'],
         );
     }
 

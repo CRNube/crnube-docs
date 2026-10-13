@@ -22,3 +22,18 @@ defined('ABSPATH') || exit;
         <span class="crnd-sr-only"><?php echo esc_html($document->title); ?></span>
     </a>
 <?php endif; ?>
+<?php if ($view->isLocked($document)) : ?>
+    <?php $crnd_login = $view->loginUrl($document); ?>
+    <?php if ($crnd_login !== '') : ?>
+        <a class="crnd-btn crnd-btn--ghost crnd-btn--lock" href="<?php echo esc_url($crnd_login); ?>">
+            <?php echo $view->iconHtml('lock'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG markup ?>
+            <span><?php esc_html_e('Sign in to open', 'crnube-docs'); ?></span>
+            <span class="crnd-sr-only"><?php echo esc_html($document->title); ?></span>
+        </a>
+    <?php else : ?>
+        <span class="crnd-locked-note">
+            <?php echo $view->iconHtml('lock'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed SVG markup ?>
+            <?php esc_html_e('Not available for your account', 'crnube-docs'); ?>
+        </span>
+    <?php endif; ?>
+<?php endif; ?>

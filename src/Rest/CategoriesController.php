@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace CRNube\Docs\Rest;
 
+use CRNube\Docs\Access\DocumentAccess;
 use CRNube\Docs\Capabilities;
 use CRNube\Docs\Domain\CategoryOrder;
 use CRNube\Docs\Domain\CategoryTaxonomy;
@@ -46,6 +47,17 @@ final class CategoriesController
             'permission_callback' => [$this, 'canManage'],
             'args'                => [
                 'ids' => ['type' => 'array', 'required' => true, 'items' => ['type' => 'integer', 'minimum' => 1], 'maxItems' => 500],
+            ],
+        ]);
+
+        register_rest_route($ns, '/categories/(?P<id>\d+)/access', [
+            'methods'             => \WP_REST_Server::CREATABLE,
+            'callback'            => [$this, 'access'],
+            'permission_callback' => static fn (): bool => current_user_can(Capabilities::MANAGE_ACCESS),
+            'args'                => [
+                'id'     => ['type' => 'integer', 'required' => true],
+                'access' => ['type' => 'string', 'required' => true, 'enum' => DocumentAccess::TERM_MODES],
+                'groups' => ['type' => 'array', 'items' => ['type' => 'integer', 'minimum' => 1], 'default' => []],
             ],
         ]);
 
@@ -115,6 +127,10 @@ final class CategoriesController
             'parent' => $t->parent,
             'order'  => (int) get_term_meta($t->term_id, CategoryTaxonomy::META_ORDER, true),
             'sort'   => CategoryOrder::mode($t->term_id),
+            // Own access setting ('' inherits from the parent) and the effective one.
+            'access'        => (string) get_term_meta($t->term_id, DocumentAccess::TERM_ACCESS, true),
+            'access_groups' => DocumentAccess::documentGroupsSetting($t->term_id),
+            'restricted'    => DocumentAccess::categorySetting($t->term_id)['access'] === 'private',
             'count'  => $counts[$t->term_id] ?? 0,
         ], $terms);
 
@@ -172,6 +188,17 @@ final class CategoriesController
             $result->add_data(['status' => 400]);
             return $result;
         }
+        return $this->index();
+    }
+
+    /** Makes a category (and what is below it) public, private, or back to inheriting. */
+    public function access(\WP_REST_Request $request): \WP_REST_Response|\WP_Error
+    {
+        $id = (int) $request['id'];
+        if (!term_exists($id, CategoryTaxonomy::NAME)) {
+            return new \WP_Error('crnd_not_found', __('The category does not exist.', 'crnube-docs'), ['status' => 404]);
+        }
+        DocumentAccess::saveForCategory($id, (string) $request['access'], (array) $request['groups']);
         return $this->index();
     }
 

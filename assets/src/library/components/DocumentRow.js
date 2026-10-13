@@ -3,6 +3,7 @@ import { DropdownMenu, MenuGroup, MenuItem } from '@wordpress/components';
 import FileIcon from './FileIcon';
 import InlineEdit from './InlineEdit';
 import CategoryPicker from './CategoryPicker';
+import AccessPicker from './AccessPicker';
 import Checkbox from './Checkbox';
 import { config, formatSize, statusLabel } from '../utils';
 
@@ -94,6 +95,9 @@ export default function DocumentRow( {
 						onSave( doc.id, { categories } )
 					}
 				/>
+			</td>
+			<td className="crnd-col-access">
+				<AccessPicker doc={ doc } onSave={ onSave } />
 			</td>
 			<td className="crnd-col-year">
 				<InlineEdit

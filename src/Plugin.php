@@ -4,7 +4,12 @@ declare(strict_types=1);
 namespace CRNube\Docs;
 
 use CRNube\Docs\Access\AccessPolicy;
-use CRNube\Docs\Access\PublicAccessPolicy;
+use CRNube\Docs\Access\GroupAccessPolicy;
+use CRNube\Docs\Access\Otp;
+use CRNube\Docs\Access\Portal;
+use CRNube\Docs\Access\PrivateStorage;
+use CRNube\Docs\Admin\AccessPage;
+use CRNube\Docs\Rest\AccessController;
 use CRNube\Docs\Analytics\Retention;
 use CRNube\Docs\Analytics\Tracker;
 use CRNube\Docs\Admin\CategoryFields;
@@ -40,18 +45,22 @@ final class Plugin
     public readonly DocumentRepository $documents;
     public readonly AccessPolicy $access;
     public readonly Renderer $renderer;
+    public readonly Portal $portal;
 
     private function __construct()
     {
         $this->settings  = new Settings();
         $this->documents = new DocumentRepository();
+        $this->portal    = new Portal($this->settings, new Otp());
         /**
-         * Lets an add-on (the future Pro plugin) replace who may open which document.
+         * Lets an add-on replace who may open which document (for example to check a
+         * cooperative's own system instead of the access groups).
          *
          * @param AccessPolicy $policy
          */
-        $this->access   = apply_filters('crnd_access_policy', new PublicAccessPolicy());
-        $this->renderer = new Renderer($this->settings, $this->documents);
+        $this->access   = apply_filters('crnd_access_policy', new GroupAccessPolicy($this->portal));
+        $this->renderer = new Renderer($this->settings, $this->documents, $this->access, $this->portal);
+        $this->portal->setRenderer($this->renderer);
     }
 
     public static function boot(): void
@@ -76,7 +85,8 @@ final class Plugin
         // Translations: WordPress loads languages/*.l10n.php on demand for this text domain.
         load_plugin_textdomain('crnube-docs', false, dirname(plugin_basename(CRND_FILE)) . '/languages');
 
-        Installer::maybeUpgrade();
+        // On init, not before: the upgrade names roles with translated strings.
+        add_action('init', [Installer::class, 'maybeUpgrade'], 1);
 
         (new DocumentPostType())->register();
         (new CategoryTaxonomy())->register();
@@ -89,9 +99,13 @@ final class Plugin
         (new DocumentsController())->register();
         (new CategoriesController())->register();
         (new StatsController())->register();
+        (new AccessController())->register();
+        (new PrivateStorage())->register();
+        $this->portal->register();
 
         if (is_admin()) {
             (new LibraryPage())->register();
+            (new AccessPage())->register();
             (new ReportsPage())->register();
             (new ReportsExport())->register();
             (new DocumentMetaBox())->register();

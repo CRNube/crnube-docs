@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace CRNube\Docs\Admin;
 
+use CRNube\Docs\Access\DocumentAccess;
+use CRNube\Docs\Access\Groups;
+use CRNube\Docs\Capabilities;
 use CRNube\Docs\Domain\DocumentPostType;
 use CRNube\Docs\Domain\FileTypes;
 use CRNube\Docs\Download\DownloadController;
@@ -32,6 +35,65 @@ final class DocumentMetaBox
     {
         add_meta_box('crnd-file', __('File', 'crnube-docs'), [$this, 'render'], DocumentPostType::NAME, 'normal', 'high');
         add_meta_box('crnd-year', __('Document year', 'crnube-docs'), [$this, 'renderYear'], DocumentPostType::NAME, 'side', 'default');
+        if (current_user_can(Capabilities::MANAGE_ACCESS)) {
+            add_meta_box('crnd-access', __('Who can open it', 'crnube-docs'), [$this, 'renderAccess'], DocumentPostType::NAME, 'side', 'default');
+        }
+    }
+
+    public function renderAccess(\WP_Post $post): void
+    {
+        $mode      = DocumentAccess::modeOf($post->ID);
+        $selected  = DocumentAccess::groupsOf($post->ID);
+        $groups    = Groups::names();
+        $effective = DocumentAccess::forPost($post->ID);
+        $options   = [
+            'inherit' => __('Same as its category', 'crnube-docs'),
+            'public'  => __('Everyone (public)', 'crnube-docs'),
+            'private' => __('Only members', 'crnube-docs'),
+        ];
+        ?>
+        <div class="crnd-accessbox">
+            <?php foreach ($options as $value => $label) : ?>
+                <label class="crnd-accessbox__option">
+                    <input type="radio" name="crnd_access" value="<?php echo esc_attr($value); ?>" <?php checked($mode, $value); ?>>
+                    <?php echo esc_html($label); ?>
+                </label>
+            <?php endforeach; ?>
+
+            <fieldset class="crnd-accessbox__groups" data-crnd-access-groups <?php echo $mode === 'private' ? '' : 'hidden'; ?>>
+                <legend><?php esc_html_e('Of these groups (none checked: any member)', 'crnube-docs'); ?></legend>
+                <?php if ($groups === []) : ?>
+                    <p class="description"><?php esc_html_e('There are no groups yet. Create them in Documents › Access.', 'crnube-docs'); ?></p>
+                <?php endif; ?>
+                <?php foreach ($groups as $id => $name) : ?>
+                    <label><input type="checkbox" name="crnd_access_groups[]" value="<?php echo (int) $id; ?>" <?php checked(in_array($id, $selected, true)); ?>> <?php echo esc_html($name); ?></label>
+                <?php endforeach; ?>
+            </fieldset>
+
+            <p class="crnd-accessbox__now">
+                <?php if ($effective['restricted']) : ?>
+                    <span class="dashicons dashicons-lock" aria-hidden="true"></span>
+                    <?php
+                    $names = array_values(array_intersect_key($groups, array_flip($effective['groups'])));
+                    echo esc_html($names === []
+                        ? __('Now: only members (any group).', 'crnube-docs')
+                        /* translators: %s: group names */
+                        : sprintf(__('Now: only %s.', 'crnube-docs'), implode(', ', $names)));
+                    ?>
+                <?php else : ?>
+                    <span class="dashicons dashicons-unlock" aria-hidden="true"></span>
+                    <?php esc_html_e('Now: public.', 'crnube-docs'); ?>
+                <?php endif; ?>
+            </p>
+        </div>
+        <script>
+        document.querySelectorAll('input[name="crnd_access"]').forEach(function (r) {
+            r.addEventListener('change', function () {
+                document.querySelector('[data-crnd-access-groups]').hidden = r.value !== 'private';
+            });
+        });
+        </script>
+        <?php
     }
 
     public function renderYear(\WP_Post $post): void
@@ -156,6 +218,14 @@ final class DocumentMetaBox
 
         $year = sanitize_text_field(wp_unslash($_POST['crnd_year'] ?? ''));
         update_post_meta($postId, DocumentPostType::META_YEAR, preg_match('/^\d{4}$/', $year) ? $year : '');
+
+        if (isset($_POST['crnd_access']) && current_user_can(Capabilities::MANAGE_ACCESS)) {
+            DocumentAccess::saveForPost(
+                $postId,
+                sanitize_key(wp_unslash($_POST['crnd_access'])),
+                array_map('absint', (array) wp_unslash($_POST['crnd_access_groups'] ?? []))
+            );
+        }
 
         // Attach an unattached upload to this document, so the media library shows where it is used.
         if ($fileId > 0 && (int) wp_get_post_parent_id($fileId) === 0) {

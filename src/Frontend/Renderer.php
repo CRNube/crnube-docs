@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace CRNube\Docs\Frontend;
 
+use CRNube\Docs\Access\AccessPolicy;
+use CRNube\Docs\Access\Portal;
+use CRNube\Docs\Domain\Document;
 use CRNube\Docs\Domain\DocumentRepository;
 use CRNube\Docs\Domain\DocumentTree;
 use CRNube\Docs\Domain\TreeQuery;
@@ -18,15 +21,16 @@ final class Renderer
     public const ATTRIBUTES = [
         'category', 'layout', 'title', 'search', 'year_filter', 'counts', 'date', 'size', 'type',
         'toggle_all', 'open', 'group_by_year', 'columns', 'orderby', 'order', 'depth', 'primary', 'accent',
-        'header_style', 'density', 'class',
+        'header_style', 'density', 'class', 'private', 'only',
     ];
-
 
     private static int $instances = 0;
 
     public function __construct(
         private readonly Settings $settings,
         private readonly DocumentRepository $documents,
+        private readonly AccessPolicy $access,
+        private readonly Portal $portal,
     ) {
     }
 
@@ -56,6 +60,15 @@ final class Renderer
             groupByYear: $options['group_by_year'],
         ));
 
+        // The cached tree holds every document; what this visitor sees is decided here.
+        $user = is_user_logged_in() ? wp_get_current_user() : null;
+        $can  = fn (Document $d): bool => $this->access->canAccess($d, $user);
+        if ($options['only'] === 'restricted') {
+            $tree = TreeFilter::filter($tree, static fn (Document $d): bool => $d->restricted && $can($d));
+        } elseif ($options['private_display'] === 'hide') {
+            $tree = TreeFilter::filter($tree, $can);
+        }
+
         return $this->renderTree($tree, $options);
     }
 
@@ -68,7 +81,7 @@ final class Renderer
     {
         Assets::enqueue();
 
-        $view = new View($tree, $options, $this->settings, 'crnd-' . ++self::$instances);
+        $view = new View($tree, $options, $this->settings, 'crnd-' . ++self::$instances, $this->access, $this->portal);
 
         ob_start();
         TemplateLoader::include($options['layout'] . '.php', ['view' => $view]);
@@ -104,6 +117,8 @@ final class Renderer
             'categories'      => $categories,
             'category_given'  => isset($atts['category']) && $atts['category'] !== '',
             'layout'          => $pick('layout', Settings::LAYOUTS, $s->get('layout')),
+            'private_display' => $pick('private', Settings::PRIVATE_DISPLAY, $s->get('private_display')),
+            'only'            => $pick('only', ['restricted'], ''),
             'columns'         => isset($atts['columns']) ? max(1, min(4, (int) $atts['columns'])) : (int) $s->get('columns'),
             'title'           => isset($atts['title']) ? sanitize_text_field((string) $atts['title']) : '',
             'search'          => $bool('search', (bool) $s->get('search')),

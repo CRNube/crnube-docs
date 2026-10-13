@@ -19,7 +19,7 @@ use CRNube\Docs\Settings\Settings;
  */
 final class SettingsPage
 {
-    private const SLUG  = 'crnd-settings';
+    public const SLUG   = 'crnd-settings';
     private const GROUP = 'crnd_settings_group';
 
     private string $hook = '';
@@ -42,7 +42,7 @@ final class SettingsPage
     public function menu(): void
     {
         $this->hook = (string) add_submenu_page(
-            'edit.php?post_type=' . DocumentPostType::NAME,
+            LibraryPage::SLUG,
             __('CRNube Docs settings', 'crnube-docs'),
             __('Settings', 'crnube-docs'),
             Capabilities::MANAGE_SETTINGS,
@@ -86,7 +86,7 @@ final class SettingsPage
 
     private function url(): string
     {
-        return admin_url('edit.php?post_type=' . DocumentPostType::NAME . '&page=' . self::SLUG);
+        return admin_url('admin.php?page=' . self::SLUG);
     }
 
     public function render(): void

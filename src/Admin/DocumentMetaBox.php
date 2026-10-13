@@ -202,6 +202,10 @@ final class DocumentMetaBox
         if ($fileId <= 0 || get_post_type($fileId) !== 'attachment') {
             return 0;
         }
-        return FileTypes::isAllowedMime((string) get_post_mime_type($fileId)) ? $fileId : 0;
+        if (!FileTypes::isAllowedMime((string) get_post_mime_type($fileId))) {
+            return 0;
+        }
+        $path = (string) get_attached_file($fileId);
+        return FileTypes::contentMatches($path, strtolower(pathinfo($path, PATHINFO_EXTENSION))) ? $fileId : 0;
     }
 }

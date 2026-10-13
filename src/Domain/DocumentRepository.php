@@ -6,7 +6,8 @@ namespace CRNube\Docs\Domain;
 use CRNube\Docs\Support\Cache;
 
 /**
- * Loads documents and arranges them into the category tree. A whole library is read
+ * Loads documents and arranges them into the category tree; each category's documents
+ * follow its own ordering mode (CategoryOrder). A whole library is read
  * with one posts query plus one terms query, and the result is cached until any
  * document or category changes.
  */
@@ -90,7 +91,7 @@ final class DocumentRepository
         $single = count($roots) === 1 && $query->rootIds !== [];
         if ($single) {
             $rootId    = $roots[0];
-            $documents = $this->sorted($byTerm[$rootId] ?? []);
+            $documents = CategoryOrder::sortDocuments($this->sorted($byTerm[$rootId] ?? []), $rootId, $query->orderBy, $query->order);
             $groups    = $this->buildChildren($rootId, 1, $byTerm, $query);
         } else {
             $documents = [];
@@ -125,7 +126,7 @@ final class DocumentRepository
             $children = $this->buildChildren($termId, $level + 1, $byTerm, $query);
         }
 
-        $documents = $this->sorted($entries);
+        $documents = CategoryOrder::sortDocuments($this->sorted($entries), $termId, $query->orderBy, $query->order);
         $ids       = array_map(static fn (Document $d): int => $d->id, $documents);
         foreach ($children as $child) {
             $ids = [...$ids, ...$this->documentIds($child)];

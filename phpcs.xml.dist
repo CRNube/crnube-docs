@@ -9,6 +9,7 @@
     <exclude-pattern>/bin/*</exclude-pattern>
     <exclude-pattern>/tests/*</exclude-pattern>
     <exclude-pattern>/languages/*</exclude-pattern>
+    <exclude-pattern>/build/*</exclude-pattern>
 
     <arg name="extensions" value="php"/>
     <arg name="colors"/>
@@ -25,6 +26,7 @@
                 <element value="edit_crnd_documents"/>
                 <element value="manage_crnd_categories"/>
                 <element value="manage_crnd_settings"/>
+                <element value="publish_crnd_documents"/>
             </property>
         </properties>
     </rule>

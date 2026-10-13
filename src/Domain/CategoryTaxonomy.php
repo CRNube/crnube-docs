@@ -62,5 +62,13 @@ final class CategoryTaxonomy
             'sanitize_callback' => static fn (mixed $value): int => (int) $value,
             'show_in_rest'      => true,
         ]);
+
+        register_term_meta(self::NAME, CategoryOrder::META_SORT, [
+            'type'              => 'string',
+            'single'            => true,
+            'default'           => '',
+            'sanitize_callback' => static fn (mixed $value): string => in_array($value, CategoryOrder::MODES, true) ? (string) $value : '',
+            'show_in_rest'      => true,
+        ]);
     }
 }

@@ -56,7 +56,8 @@ final class DocumentPostType
             'publicly_queryable'  => false,
             'exclude_from_search' => true,
             'show_ui'             => true,
-            'show_in_menu'        => true,
+            // Listed under the "Documents" menu that LibraryPage creates.
+            'show_in_menu'        => 'crnd-library',
             'show_in_rest'        => true,
             'menu_position'       => 25,
             'menu_icon'           => 'dashicons-media-document',

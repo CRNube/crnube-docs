@@ -8,6 +8,7 @@ use CRNube\Docs\Access\PublicAccessPolicy;
 use CRNube\Docs\Admin\CategoryFields;
 use CRNube\Docs\Admin\DocumentListTable;
 use CRNube\Docs\Admin\DocumentMetaBox;
+use CRNube\Docs\Admin\LibraryPage;
 use CRNube\Docs\Admin\SettingsPage;
 use CRNube\Docs\Domain\CategoryTaxonomy;
 use CRNube\Docs\Domain\DocumentPostType;
@@ -17,6 +18,8 @@ use CRNube\Docs\Download\DownloadController;
 use CRNube\Docs\Frontend\Assets;
 use CRNube\Docs\Frontend\Renderer;
 use CRNube\Docs\Frontend\Shortcode;
+use CRNube\Docs\Rest\CategoriesController;
+use CRNube\Docs\Rest\DocumentsController;
 use CRNube\Docs\Settings\Settings;
 use CRNube\Docs\Support\Cache;
 
@@ -77,8 +80,11 @@ final class Plugin
         (new DownloadController($this->access))->register();
         (new Assets($this->settings))->register();
         (new Shortcode($this->renderer))->register();
+        (new DocumentsController())->register();
+        (new CategoriesController())->register();
 
         if (is_admin()) {
+            (new LibraryPage())->register();
             (new DocumentMetaBox())->register();
             (new DocumentListTable())->register();
             (new CategoryFields())->register();

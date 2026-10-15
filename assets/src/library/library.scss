@@ -1,0 +1,959 @@
+// CRNube Docs: admin library.
+
+$border: #e0e0e0;
+$muted: #757575;
+$surface: #fff;
+$radius: 10px;
+$accent: var(--wp-admin-theme-color, #3858e9);
+
+.crnd-library-wrap {
+	margin: 0;
+	padding: 0;
+}
+
+// The admin page has its own padding; the app uses the whole width.
+.toplevel_page_crnd-library #wpcontent {
+	padding-left: 0;
+}
+
+.toplevel_page_crnd-library #wpbody-content {
+	padding-bottom: 0;
+}
+
+.crnd-lib {
+	display: grid;
+	grid-template-columns: 290px minmax(0, 1fr);
+	min-height: calc(100vh - 32px);
+	background: #f6f7f9;
+
+	@media (max-width: 960px) {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+// ---------- Category tree ----------
+
+.crnd-tree {
+	position: sticky;
+	top: 32px;
+	align-self: start;
+	max-height: calc(100vh - 32px);
+	overflow-y: auto;
+	padding: 20px 12px 24px;
+	background: $surface;
+	border-right: 1px solid $border;
+
+	@media (max-width: 960px) {
+		position: static;
+		max-height: none;
+		border-right: 0;
+		border-bottom: 1px solid $border;
+	}
+
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin: 0 8px 10px;
+
+		h2 {
+			margin: 0;
+			font-size: 11px;
+			font-weight: 600;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			color: $muted;
+		}
+	}
+
+	&__list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	&__item {
+		margin: 0;
+	}
+
+	&__row {
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		padding-left: calc(var(--depth, 0) * 16px);
+		border-radius: 8px;
+		transition: background-color 0.12s;
+
+		&:hover {
+			background: #f0f0f0;
+		}
+
+		&.is-selected {
+			background: color-mix(in srgb, #{$accent} 12%, #fff);
+
+			.crnd-tree__label {
+				color: $accent;
+				font-weight: 600;
+			}
+		}
+
+		&.is-drop-target {
+			background: color-mix(in srgb, #{$accent} 18%, #fff);
+			outline: 2px dashed $accent;
+			outline-offset: -2px;
+		}
+
+		&--special {
+			margin-bottom: 6px;
+		}
+
+		&:not(:hover):not(:focus-within) .crnd-tree__menu {
+			opacity: 0;
+		}
+	}
+
+	&__toggle {
+		display: inline-flex;
+		flex: none;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		color: $muted;
+		background: none;
+		border: 0;
+		border-radius: 4px;
+		cursor: pointer;
+
+		&--empty {
+			cursor: default;
+		}
+
+		.dashicons {
+			font-size: 16px;
+			width: 16px;
+			height: 16px;
+		}
+
+		&:hover:not(&--empty) {
+			color: #1e1e1e;
+			background: #e0e0e0;
+		}
+	}
+
+	&__label {
+		display: flex;
+		flex: 1;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+		padding: 7px 6px;
+		font-size: 13px;
+		text-align: left;
+		color: #1e1e1e;
+		background: none;
+		border: 0;
+		cursor: pointer;
+
+		.dashicons {
+			flex: none;
+			font-size: 18px;
+			width: 18px;
+			height: 18px;
+			color: $muted;
+		}
+
+		&:focus-visible {
+			outline: 2px solid $accent;
+			border-radius: 6px;
+		}
+	}
+
+	&__row--special &__label {
+		padding-left: 8px;
+	}
+
+	&__name {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	&__count {
+		flex: none;
+		min-width: 22px;
+		padding: 0 6px;
+		font-size: 11px;
+		line-height: 18px;
+		text-align: center;
+		color: $muted;
+		background: #f0f0f0;
+		border-radius: 999px;
+	}
+
+	&__menu {
+		flex: none;
+		transition: opacity 0.12s;
+
+		.components-button {
+			min-width: 28px;
+			height: 28px;
+			padding: 2px;
+		}
+	}
+
+	&__empty,
+	&__hint {
+		margin: 12px 8px;
+		color: $muted;
+		font-size: 12px;
+	}
+
+	&__hint {
+		margin-top: 20px;
+		padding-top: 14px;
+		border-top: 1px solid #f0f0f0;
+	}
+}
+
+// ---------- Main panel ----------
+
+.crnd-lib__main {
+	position: relative;
+	min-width: 0;
+	padding: 24px 28px 40px;
+
+	@media (max-width: 782px) {
+		padding: 16px 12px 32px;
+	}
+}
+
+.crnd-lib__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 18px;
+}
+
+.crnd-lib__heading {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 10px;
+	min-width: 0;
+
+	h1 {
+		margin: 0;
+		padding: 0;
+		font-size: 22px;
+		font-weight: 600;
+		line-height: 1.3;
+	}
+}
+
+.crnd-lib__total {
+	color: $muted;
+}
+
+.crnd-lib__header-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.crnd-lib__toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 14px;
+
+	.components-base-control {
+		margin: 0;
+	}
+}
+
+.crnd-lib__search {
+	flex: 1 1 260px;
+	max-width: 420px;
+}
+
+.crnd-lib__publish-toggle {
+	margin-left: auto !important;
+
+	.components-toggle-control__label,
+	label {
+		white-space: nowrap;
+	}
+}
+
+// ---------- Bulk bar ----------
+
+.crnd-bulk {
+	position: sticky;
+	top: 40px;
+	z-index: 5;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+	padding: 10px 14px;
+	color: #fff;
+	background: #1e1e1e;
+	border-radius: $radius;
+	box-shadow: 0 8px 24px -10px rgb(0 0 0 / 35%);
+
+	.components-base-control {
+		margin: 0;
+		min-width: 190px;
+	}
+
+	select,
+	.components-select-control__input {
+		color: #1e1e1e;
+		background-color: #fff;
+	}
+
+	.components-button.is-tertiary {
+		color: #fff;
+	}
+
+	&__year {
+		width: 190px;
+		height: 40px;
+		border-radius: 2px;
+	}
+}
+
+// ---------- Table ----------
+
+.crnd-table-wrap {
+	position: relative;
+	overflow-x: auto;
+	background: $surface;
+	border: 1px solid $border;
+	border-radius: $radius;
+
+	&.is-loading .crnd-table {
+		opacity: 0.55;
+	}
+}
+
+.crnd-table-loading {
+	position: absolute;
+	top: 14px;
+	right: 14px;
+	z-index: 2;
+}
+
+.crnd-table {
+	width: 100%;
+	border-collapse: collapse;
+	transition: opacity 0.15s;
+
+	th,
+	td {
+		padding: 10px 12px;
+		text-align: left;
+		vertical-align: middle;
+		border-bottom: 1px solid #f0f0f0;
+	}
+
+	th {
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: $muted;
+		white-space: nowrap;
+		background: #fafafa;
+		border-bottom-color: $border;
+	}
+
+	tbody tr {
+		transition: background-color 0.12s;
+
+		&:hover {
+			background: #f9fafb;
+		}
+
+		&.is-checked {
+			background: color-mix(in srgb, #{$accent} 6%, #fff);
+		}
+
+		&:last-child td {
+			border-bottom: 0;
+		}
+
+		&[draggable="true"] {
+			cursor: grab;
+		}
+	}
+
+	.crnd-col-check {
+		width: 28px;
+		padding-right: 0;
+	}
+
+	.crnd-col-title {
+		min-width: 220px;
+	}
+
+	.crnd-col-year {
+		width: 70px;
+	}
+
+	.crnd-col-status {
+		width: 100px;
+	}
+
+	.crnd-col-date {
+		width: 100px;
+		color: $muted;
+		white-space: nowrap;
+	}
+
+	.crnd-col-downloads {
+		width: 50px;
+		text-align: right;
+		color: $muted;
+	}
+
+	.crnd-col-actions {
+		width: 40px;
+		padding-left: 0;
+	}
+
+	@media (max-width: 1100px) {
+		.crnd-col-date,
+		.crnd-col-downloads {
+			display: none;
+		}
+	}
+}
+
+.crnd-sort {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	padding: 0;
+	font: inherit;
+	letter-spacing: inherit;
+	text-transform: inherit;
+	color: inherit;
+	background: none;
+	border: 0;
+	cursor: pointer;
+
+	&.is-active,
+	&:hover {
+		color: #1e1e1e;
+	}
+
+	.dashicons {
+		font-size: 14px;
+		width: 14px;
+		height: 14px;
+	}
+}
+
+.crnd-doc-cell {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+
+	&__text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	&__title {
+		font-weight: 600;
+		font-size: 14px;
+		color: #1e1e1e;
+	}
+
+	&__file {
+		overflow: hidden;
+		font-size: 12px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: $muted;
+	}
+}
+
+.crnd-lib-icon {
+	flex: none;
+
+	&--link {
+		width: 28px;
+		height: 28px;
+		font-size: 26px;
+		color: $muted;
+	}
+}
+
+.crnd-inline {
+	max-width: 100%;
+	padding: 2px 4px;
+	margin: -2px -4px;
+	font: inherit;
+	text-align: left;
+	color: inherit;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	cursor: text;
+
+	&:hover {
+		background: #fff;
+		border-color: $border;
+	}
+
+	&:focus-visible {
+		outline: 2px solid $accent;
+	}
+
+	&__placeholder,
+	.crnd-muted {
+		color: $muted;
+	}
+}
+
+.crnd-inline-input {
+	width: 100%;
+	min-height: 30px;
+	padding: 2px 6px;
+	font: inherit;
+
+	&[type="number"] {
+		width: 80px;
+	}
+}
+
+.crnd-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 2px;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	cursor: pointer;
+
+	&:hover {
+		border-color: $border;
+	}
+}
+
+.crnd-chip {
+	padding: 2px 8px;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #1e1e1e;
+	white-space: nowrap;
+	background: #f0f0f0;
+	border-radius: 999px;
+
+	&--empty {
+		color: #a35200;
+		background: #fff4e5;
+	}
+}
+
+.crnd-catpicker__content {
+	width: 280px;
+	padding: 8px;
+}
+
+.crnd-catpicker__list {
+	max-height: 300px;
+	overflow-y: auto;
+	padding: 4px;
+
+	> div {
+		padding-top: 4px;
+		padding-bottom: 4px;
+	}
+}
+
+.crnd-catpicker__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 6px;
+	padding-top: 8px;
+	border-top: 1px solid #f0f0f0;
+}
+
+.crnd-status {
+	padding: 3px 10px;
+	font-size: 12px;
+	font-weight: 500;
+	white-space: nowrap;
+	border: 0;
+	border-radius: 999px;
+	cursor: pointer;
+
+	&:disabled {
+		cursor: default;
+	}
+
+	&--publish {
+		color: #00703c;
+		background: #e6f5ec;
+	}
+
+	&--draft {
+		color: #50575e;
+		background: #f0f0f1;
+	}
+
+	&--pending,
+	&--future {
+		color: #8a5a00;
+		background: #fff4e0;
+	}
+
+	&--private {
+		color: #6b21a8;
+		background: #f3e8ff;
+	}
+}
+
+// ---------- Empty state, pager, drop zone ----------
+
+.crnd-empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 64px 24px;
+	text-align: center;
+	background: $surface;
+	border: 2px dashed $border;
+	border-radius: $radius;
+
+	> .dashicons {
+		width: 48px;
+		height: 48px;
+		font-size: 48px;
+		color: #c3c4c7;
+	}
+
+	h3 {
+		margin: 8px 0 0;
+		font-size: 16px;
+	}
+
+	p {
+		margin: 0 0 10px;
+		color: $muted;
+	}
+}
+
+.crnd-pager {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin-top: 16px;
+	color: $muted;
+}
+
+.crnd-dropzone {
+	position: absolute;
+	inset: 12px;
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	background: color-mix(in srgb, #{$accent} 10%, rgb(255 255 255 / 85%));
+	border: 3px dashed $accent;
+	border-radius: 14px;
+	backdrop-filter: blur(2px);
+
+	&__inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		max-width: 420px;
+		text-align: center;
+		color: #1e1e1e;
+
+		.dashicons {
+			width: 56px;
+			height: 56px;
+			font-size: 56px;
+			color: $accent;
+		}
+
+		strong {
+			font-size: 18px;
+		}
+	}
+}
+
+// ---------- Upload panel and notices ----------
+
+.crnd-uploads {
+	position: fixed;
+	right: 24px;
+	bottom: 24px;
+	z-index: 100000;
+	width: 360px;
+	max-width: calc(100vw - 48px);
+	overflow: hidden;
+	background: $surface;
+	border: 1px solid $border;
+	border-radius: 12px;
+	box-shadow: 0 16px 40px -12px rgb(0 0 0 / 30%);
+
+	&__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 44px;
+		padding: 4px 8px 4px 16px;
+		color: #fff;
+		background: #1e1e1e;
+
+		.components-button {
+			color: #fff;
+		}
+	}
+
+	&__list {
+		max-height: 300px;
+		margin: 0;
+		padding: 4px 0;
+		overflow-y: auto;
+		list-style: none;
+	}
+}
+
+.crnd-upload {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+	padding: 8px 14px;
+
+	&__body {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+	}
+
+	&__name {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	&__bar {
+		height: 4px;
+		overflow: hidden;
+		background: #f0f0f0;
+		border-radius: 2px;
+
+		span {
+			display: block;
+			height: 100%;
+			background: $accent;
+			transition: width 0.2s;
+		}
+	}
+
+	&--done &__bar span {
+		background: #00a32a;
+	}
+
+	&__error {
+		font-size: 12px;
+		color: #cc1818;
+	}
+
+	&__state .dashicons-yes-alt {
+		color: #00a32a;
+	}
+
+	&__state .dashicons-warning {
+		color: #cc1818;
+	}
+}
+
+.crnd-notices {
+	position: fixed;
+	bottom: 24px;
+	left: 184px;
+	z-index: 100000;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	.folded & {
+		left: 60px;
+	}
+
+	@media (max-width: 960px) {
+		left: 12px;
+	}
+
+	.components-snackbar.is-error {
+		background: #cc1818;
+	}
+}
+
+// ---------- Modals ----------
+
+.crnd-modal-form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 340px;
+}
+
+.crnd-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+// Other plugins' floating notices (e.g. Hello Dolly) would squeeze the app beside them.
+.crnd-library-wrap {
+	clear: both;
+}
+
+.crnd-check {
+	margin: 0;
+}
+
+// ---------- Ordering by drag and drop ----------
+
+.crnd-lib__sortmode {
+	min-width: 220px;
+
+	.components-base-control__label,
+	label {
+		margin-bottom: 2px;
+		font-size: 11px;
+		color: $muted;
+	}
+}
+
+.crnd-table .crnd-col-handle {
+	width: 20px;
+	padding-right: 0;
+}
+
+.crnd-handle {
+	color: #c3c4c7;
+	cursor: grab;
+
+	tr:hover & {
+		color: $muted;
+	}
+}
+
+// Where a dragged row will land.
+.crnd-table tbody tr.is-drop-before td {
+	box-shadow: inset 0 2px 0 $accent;
+}
+
+.crnd-table tbody tr.is-drop-after td {
+	box-shadow: inset 0 -2px 0 $accent;
+}
+
+.crnd-folder-row {
+	td {
+		padding-top: 6px;
+		padding-bottom: 6px;
+		background: #fcfcfd;
+	}
+
+	&.is-drop-target td {
+		background: color-mix(in srgb, #{$accent} 12%, #fff);
+		box-shadow: inset 0 0 0 2px $accent;
+	}
+}
+
+.crnd-folder {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 6px 4px;
+	font: inherit;
+	font-weight: 600;
+	text-align: left;
+	color: #1e1e1e;
+	background: none;
+	border: 0;
+	border-radius: 6px;
+	cursor: pointer;
+
+	.dashicons-category {
+		color: $accent;
+	}
+
+	&__name {
+		flex: 1;
+	}
+
+	&__count {
+		font-weight: 400;
+		color: $muted;
+	}
+
+	&:hover {
+		color: $accent;
+	}
+
+	&:focus-visible {
+		outline: 2px solid $accent;
+	}
+}
+
+// Where a dragged category will land in the tree.
+.crnd-tree__row {
+	&.is-drop-before {
+		box-shadow: inset 0 2px 0 $accent;
+		border-radius: 0;
+	}
+
+	&.is-drop-after {
+		box-shadow: inset 0 -2px 0 $accent;
+		border-radius: 0;
+	}
+
+	&.is-drop-inside {
+		background: color-mix(in srgb, #{$accent} 18%, #fff);
+		outline: 2px dashed $accent;
+		outline-offset: -2px;
+	}
+
+	&[draggable="true"] .crnd-tree__label {
+		cursor: grab;
+	}
+}
+
+.crnd-tree__lock {
+	flex: none;
+	width: 15px;
+	height: 15px;
+	font-size: 14px;
+	color: #a35200;
+}

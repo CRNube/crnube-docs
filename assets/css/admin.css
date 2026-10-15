@@ -15,6 +15,16 @@
     font-weight: 600;
 }
 
+/* The boxes below set their own display; hidden must still win. */
+.crnd-filebox [hidden] {
+    display: none !important;
+}
+
+.crnd-filebox__bulk {
+    margin: 14px auto 0 !important;
+    font-size: 13px;
+}
+
 .crnd-filebox__empty {
     padding: 28px 20px;
     text-align: center;
@@ -721,4 +731,91 @@
 
 .crnd-muted {
     color: #646970;
+}
+
+/* ---------- Document screen: drop a file, year, categories ---------- */
+
+.crnd-filebox__empty {
+    transition: border-color .15s, background-color .15s;
+}
+
+.crnd-filebox.is-dragover .crnd-filebox__empty {
+    background: #f0f6fc;
+    border-color: #2271b1;
+    border-style: solid;
+}
+
+.crnd-filebox.is-busy .crnd-filebox__empty {
+    opacity: .7;
+    pointer-events: none;
+}
+
+.crnd-filebox__status {
+    margin: 12px auto 0 !important;
+    font-weight: 600;
+    color: #2271b1 !important;
+}
+
+.crnd-filebox__status.is-error {
+    color: #b32d2e !important;
+}
+
+.crnd-yearbox__label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.crnd-yearbox .crnd-yearbox__input {
+    width: 100%;
+    height: 40px;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    border-radius: 8px;
+}
+
+.crnd-yearbox__hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #646970;
+}
+
+/* Categories: one plain list, no "Most used" tab. */
+#crnd_categorydiv .category-tabs,
+#crnd_categorydiv #crnd_category-pop {
+    display: none;
+}
+
+#crnd_categorydiv #crnd_category-all {
+    max-height: 320px;
+    margin-top: 2px;
+    padding: 4px 8px;
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+}
+
+#crnd_categorydiv .categorychecklist li {
+    margin: 0;
+    padding: 3px 0;
+    line-height: 1.5;
+}
+
+#crnd_categorydiv .categorychecklist ul.children {
+    margin: 2px 0 0 20px;
+    padding-left: 8px;
+    border-left: 1px solid #e0e0e0;
+}
+
+#crnd_categorydiv .categorychecklist label {
+    display: block;
+}
+
+#crnd_categorydiv .categorychecklist label:has(input:checked) {
+    font-weight: 600;
+    color: #1d2327;
+}
+
+#crnd_categorydiv #crnd_category-adder {
+    margin-top: 10px;
 }

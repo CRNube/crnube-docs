@@ -32,16 +32,29 @@ final class DocumentMetaBox
     {
         add_meta_box('crnd-file', __('File', 'crnube-docs'), [$this, 'render'], DocumentPostType::NAME, 'normal', 'high');
         add_meta_box('crnd-year', __('Document year', 'crnube-docs'), [$this, 'renderYear'], DocumentPostType::NAME, 'side', 'default');
+        // WordPress' "Order" number box: the order is set by dragging in the Library instead.
+        remove_meta_box('pageparentdiv', DocumentPostType::NAME, 'side');
     }
 
     public function renderYear(\WP_Post $post): void
     {
-        $year = (string) get_post_meta($post->ID, DocumentPostType::META_YEAR, true);
+        $year      = (string) get_post_meta($post->ID, DocumentPostType::META_YEAR, true);
+        $published = (string) get_post_time('Y', false, $post);
         ?>
-        <label for="crnd-year" class="screen-reader-text"><?php esc_html_e('Document year', 'crnube-docs'); ?></label>
-        <input type="number" id="crnd-year" name="crnd_year" min="1900" max="2100" step="1" class="widefat"
-            value="<?php echo esc_attr($year); ?>" placeholder="<?php echo esc_attr((string) get_post_time('Y', false, $post)); ?>">
-        <p class="description"><?php esc_html_e('The year the document covers, used by the year filter and year groups. Empty: the publication year.', 'crnube-docs'); ?></p>
+        <div class="crnd-yearbox">
+            <label for="crnd-year" class="crnd-yearbox__label"><?php esc_html_e('Year the document covers', 'crnube-docs'); ?></label>
+            <input type="number" id="crnd-year" name="crnd_year" min="1900" max="2100" step="1" inputmode="numeric"
+                class="crnd-yearbox__input" value="<?php echo esc_attr($year); ?>" placeholder="<?php echo esc_attr($published); ?>">
+            <p class="crnd-yearbox__hint">
+                <?php
+                echo esc_html(sprintf(
+                    /* translators: %s: year the document was published */
+                    __('For example, the 2024 financial statements published in 2025: 2024. Empty: %s, the publication year.', 'crnube-docs'),
+                    $published
+                ));
+                ?>
+            </p>
+        </div>
         <?php
     }
 
@@ -55,11 +68,20 @@ final class DocumentMetaBox
         wp_enqueue_style('crnd-admin', CRND_URL . 'assets/css/admin.css', [], Assets::version('assets/css/admin.css'));
         wp_enqueue_script('crnd-admin-document', CRND_URL . 'assets/js/admin-document.js', ['jquery', 'media-editor'], Assets::version('assets/js/admin-document.js'), true);
         wp_localize_script('crnd-admin-document', 'crndDocument', [
-            'mimes' => array_values(array_unique(FileTypes::allowedMimes())),
-            'i18n'  => [
-                'frameTitle'  => __('Choose the document file', 'crnube-docs'),
-                'frameButton' => __('Use this file', 'crnube-docs'),
-                'notAllowed'  => __('This file type is not allowed for documents.', 'crnube-docs'),
+            'mimes'      => array_values(array_unique(FileTypes::allowedMimes())),
+            'extensions' => array_keys(FileTypes::allowedMimes()),
+            'maxSize'    => wp_max_upload_size(),
+            'mediaUrl'   => esc_url_raw(rest_url('wp/v2/media')),
+            'nonce'      => wp_create_nonce('wp_rest'),
+            'i18n'       => [
+                'frameTitle'   => __('Choose the document file', 'crnube-docs'),
+                'frameButton'  => __('Use this file', 'crnube-docs'),
+                'notAllowed'   => __('This file type is not allowed for documents.', 'crnube-docs'),
+                /* translators: %s: file name */
+                'uploading'    => __('Uploading %s…', 'crnube-docs'),
+                'uploadFailed' => __('The file could not be uploaded. Try again or use the button.', 'crnube-docs'),
+                'tooBig'       => __('The file is larger than this site allows.', 'crnube-docs'),
+                'several'      => __('This screen takes one file. To upload several documents at once, drag them into the Library.', 'crnube-docs'),
             ],
         ]);
     }
@@ -89,8 +111,15 @@ final class DocumentMetaBox
 
                 <div class="crnd-filebox__empty" data-crnd-empty <?php echo $hasFile ? 'hidden' : ''; ?>>
                     <span class="dashicons dashicons-upload" aria-hidden="true"></span>
-                    <p><?php esc_html_e('Upload a PDF, Word, Excel or PowerPoint file, or choose one already in the media library.', 'crnube-docs'); ?></p>
+                    <p><?php esc_html_e('Drag the PDF, Word, Excel or PowerPoint file here, or choose one already in the media library.', 'crnube-docs'); ?></p>
                     <button type="button" class="button button-primary button-hero" data-crnd-select><?php esc_html_e('Select or upload file', 'crnube-docs'); ?></button>
+                    <p class="crnd-filebox__status" data-crnd-status role="status" hidden></p>
+                    <?php if ($post->post_status === 'auto-draft') : ?>
+                        <p class="crnd-filebox__bulk">
+                            <?php esc_html_e('Several documents at once?', 'crnube-docs'); ?>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=' . LibraryPage::SLUG)); ?>"><?php esc_html_e('Drag them all into the Library', 'crnube-docs'); ?></a>
+                        </p>
+                    <?php endif; ?>
                 </div>
 
                 <div class="crnd-filebox__file" data-crnd-file <?php echo $hasFile ? '' : 'hidden'; ?>>

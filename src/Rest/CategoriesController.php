@@ -110,7 +110,13 @@ final class CategoriesController
         $terms = is_array($terms) ? $terms : [];
         $counts = $this->counts();
 
-        $items = array_map(static fn (\WP_Term $t): array => [
+        /**
+         * Each category as the library app gets it; add-ons add their own fields.
+         *
+         * @param array<string, mixed> $item
+         * @param \WP_Term             $term
+         */
+        $items = array_map(static fn (\WP_Term $t): array => (array) apply_filters('crnd_rest_category', [
             'id'     => $t->term_id,
             'name'   => $t->name,
             'slug'   => $t->slug,
@@ -122,7 +128,7 @@ final class CategoriesController
             'access_groups' => DocumentAccess::documentGroupsSetting($t->term_id),
             'restricted'    => DocumentAccess::categorySetting($t->term_id)['access'] === 'private',
             'count'  => $counts[$t->term_id] ?? 0,
-        ], $terms);
+        ], $t), $terms);
 
         usort($items, static fn (array $a, array $b): int => [$a['order'], $a['name']] <=> [$b['order'], $b['name']]);
 
